@@ -1,5 +1,7 @@
 # Clustering for Flutter Google Maps 
 
+[![pub package](https://img.shields.io/pub/v/clustering_google_maps.svg)](https://pub.dartlang.org/packages/clustering_google_maps)
+
 A Flutter package that recreate clustering technique in a [Google Maps](https://developers.google.com/maps/) widget.
 
 <div style="text-align: center"><table><tr>
