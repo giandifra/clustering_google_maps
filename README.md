@@ -2,6 +2,22 @@
 
 A Flutter package that recreate clustering technique in a [Google Maps](https://developers.google.com/maps/) widget.
 
+<div style="text-align: center"><table><tr>
+  <td style="text-align: center">
+  <a href="https://github.com/giandifra/clustering_google_maps/example.gif">
+    <img src="https://github.com/giandifra/clustering_google_maps/example.gif" width="200"/></a>
+</td>
+<td style="text-align: center">
+  
+</td>
+<td style="text-align: center">
+ 
+</td>
+  <td style="text-align: center">
+
+</td>
+</tr></table></div>
+
 ## Developers Preview Status
 The package recreate the CLUSTERING technique in a Google Maps. 
 It's work with data recordered in a dababase SQLite. I use [sqflite](https://pub.dartlang.org/packages/sqflite)
