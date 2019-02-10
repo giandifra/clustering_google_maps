@@ -4,17 +4,8 @@ A Flutter package that recreate clustering technique in a [Google Maps](https://
 
 <div style="text-align: center"><table><tr>
   <td style="text-align: center">
-  <a href="https://github.com/giandifra/clustering_google_maps/example.gif">
-    <img src="https://github.com/giandifra/clustering_google_maps/example.gif" width="200"/></a>
-</td>
-<td style="text-align: center">
-  
-</td>
-<td style="text-align: center">
- 
-</td>
-  <td style="text-align: center">
-
+  <a href="https://github.com/giandifra/clustering_google_maps/blob/master/example.gif">
+    <img src="https://github.com/giandifra/clustering_google_maps/blob/master/example.gif" width="200"/></a>
 </td>
 </tr></table></div>
 
