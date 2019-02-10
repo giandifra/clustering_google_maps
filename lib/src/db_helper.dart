@@ -17,15 +17,15 @@ class DBHelper {
           'SELECT COUNT(*) as n_marker, AVG($dbLatColumn) as lat,  AVG($dbLongColumn) as long '
               'FROM $dbTable GROUP BY substr($dbGeohashColumn,1,$level);');
 
-      List<AggregatedPoints> AggregatedPointss = new List();
+      List<AggregatedPoints> aggregatedPoints = new List();
 
       for (Map<String, dynamic> item in result) {
         print(item);
         var p = new AggregatedPoints.fromMap(item, dbLatColumn, dbLongColumn);
-        AggregatedPointss.add(p);
+        aggregatedPoints.add(p);
       }
       print("--------- COMPLETE QUERY AGGREGATION");
-      return AggregatedPointss;
+      return aggregatedPoints;
     } catch (e) {
       print(e.toString());
       print("--------- COMPLETE QUERY AGGREGATION WITH ERROR");

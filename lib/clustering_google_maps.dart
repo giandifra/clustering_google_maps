@@ -8,7 +8,6 @@ import 'package:meta/meta.dart';
 import 'package:sqflite/sqflite.dart';
 
 class ClusteringHelper {
-
 //  ClusteringHelper(this.dbTable, this.dbLatColumn, this.dbLongColumn, this.dbGeohashColumn, {
 //    this.bitmapAssetPathForSingleMarker,
 //    this.mapController,
@@ -120,7 +119,6 @@ class ClusteringHelper {
     }
   }
 
-
   // Used for update list
   // NOT RECCOMENDED for good performance (SQL IS BETTER)
   updateData(List<LatLngAndGeohash> newList) {
@@ -151,14 +149,9 @@ class ClusteringHelper {
     }
 
     try {
-      List<AggregatedPoints> aggregatedPoints;
-
-      if (database != null) {
-        aggregatedPoints = await DBHelper.getAggregatedPoints(database, dbTable,
-            dbLatColumn, dbLongColumn, dbGeohashColumn, level);
-      } else {
-        //aggregatedPoints = _retrieveAggregatedPoints(list, [], level);
-      }
+      final List<AggregatedPoints> aggregatedPoints =
+          await DBHelper.getAggregatedPoints(database, dbTable, dbLatColumn,
+              dbLongColumn, dbGeohashColumn, level);
 
       print(
           "reading complete aggregation pooints : ${aggregatedPoints.length}");
@@ -171,33 +164,33 @@ class ClusteringHelper {
   final List<AggregatedPoints> aggList = [];
 
   // NOT RECCOMENDED for good performance (SQLite IS BETTER)
-  List<AggregatedPoints> _retrieveAggregatedPoints(
-      List<LatLngAndGeohash> inputList,
-      List<AggregatedPoints> resultList,
-      int level) {
-    print("input list lenght: " + inputList.length.toString());
-
-    if (inputList.isEmpty) {
-      return resultList;
-    }
-    final List<LatLngAndGeohash> newInputList = List.from(inputList);
-    List<LatLngAndGeohash> tmp;
-    final t = newInputList[0].geohash.substring(0, level);
-    tmp =
-        newInputList.where((p) => p.geohash.substring(0, level) == t).toList();
-    newInputList.removeWhere((p) => p.geohash.substring(0, level) == t);
-    double latitude = 0;
-    double longitude = 0;
-    tmp.forEach((l) {
-      latitude += l.location.latitude;
-      longitude += l.location.longitude;
-    });
-    final count = tmp.length;
-    final a =
-        AggregatedPoints(LatLng(latitude / count, longitude / count), count);
-    resultList.add(a);
-    return _retrieveAggregatedPoints(newInputList, resultList, level);
-  }
+//  List<AggregatedPoints> _retrieveAggregatedPoints(
+//      List<LatLngAndGeohash> inputList,
+//      List<AggregatedPoints> resultList,
+//      int level) {
+//    print("input list lenght: " + inputList.length.toString());
+//
+//    if (inputList.isEmpty) {
+//      return resultList;
+//    }
+//    final List<LatLngAndGeohash> newInputList = List.from(inputList);
+//    List<LatLngAndGeohash> tmp;
+//    final t = newInputList[0].geohash.substring(0, level);
+//    tmp =
+//        newInputList.where((p) => p.geohash.substring(0, level) == t).toList();
+//    newInputList.removeWhere((p) => p.geohash.substring(0, level) == t);
+//    double latitude = 0;
+//    double longitude = 0;
+//    tmp.forEach((l) {
+//      latitude += l.location.latitude;
+//      longitude += l.location.longitude;
+//    });
+//    final count = tmp.length;
+//    final a =
+//        AggregatedPoints(LatLng(latitude / count, longitude / count), count);
+//    resultList.add(a);
+//    return _retrieveAggregatedPoints(newInputList, resultList, level);
+//  }
 
   updateAggregatedPoints({double zoom = 0.0}) async {
     List<AggregatedPoints> aggregation = await getAggregatedPoints(zoom);
@@ -233,11 +226,11 @@ class ClusteringHelper {
     });
   }
 
-
   updatePoints(double zoom) async {
     print("update single points");
-    if(database != null){
-      final l = await DBHelper.getPoints(database, dbTable, dbLatColumn, dbLongColumn);
+    if (database != null) {
+      final l = await DBHelper.getPoints(
+          database, dbTable, dbLatColumn, dbLongColumn);
       l.forEach((p) {
         mapController.addMarker(MarkerOptions(
           position: p.location,
@@ -246,7 +239,7 @@ class ClusteringHelper {
               : BitmapDescriptor.defaultMarker,
         ));
       });
-    }else{
+    } else {
 //      list.forEach((p) {
 //        mapController.addMarker(MarkerOptions(
 //          position: p.location,

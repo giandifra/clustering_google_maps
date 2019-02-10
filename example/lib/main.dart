@@ -1,4 +1,3 @@
-import 'package:example/home.dart';
 import 'package:example/splash.dart';
 import 'package:flutter/material.dart';
 

@@ -14,12 +14,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
 
+  ClusteringHelper clusteringHelper;
   final CameraPosition initialCameraPosition =
       CameraPosition(target: LatLng(0.000000, 0.000000), zoom: 0.0);
 
   void _onMapCreated(GoogleMapController mapController) async {
     final Database database = await AppDatabase.get().getDb();
-    final ClusteringHelper clusteringHelper = ClusteringHelper.forDB(
+    clusteringHelper = ClusteringHelper.forDB(
       database: database,
       mapController: mapController,
       dbGeohashColumn: FakePoint.dbGeohash,
