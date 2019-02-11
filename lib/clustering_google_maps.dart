@@ -134,18 +134,16 @@ class ClusteringHelper {
       level = 1;
     } else if (zoom < 5) {
       level = 2;
-    } else if (zoom < 7) {
+    } else if (zoom < 7.5) {
       level = 3;
-    } else if (zoom < 10) {
+    } else if (zoom < 10.5) {
       level = 4;
-    } else if (zoom < 11) {
-      level = 5;
     } else if (zoom < 13) {
-      level = 6;
+      level = 5;
     } else if (zoom < 13.5) {
-      level = 7;
+      level = 6;
     } else if (zoom < 14.5) {
-      level = 8;
+      level = 7;
     }
 
     try {
@@ -205,23 +203,40 @@ class ClusteringHelper {
         } else {
           bitmapDescriptor = BitmapDescriptor.defaultMarker;
         }
-      } else if (a.count < 20) {
+      } else if (a.count < 10) {
+        // + 2
         bitmapDescriptor = BitmapDescriptor.fromAsset("assets/images/m1.png",
             package: "clustering_google_maps");
-      } else if (a.count < 100) {
+      } else if (a.count < 25) {
+        // + 10
         bitmapDescriptor = BitmapDescriptor.fromAsset("assets/images/m2.png",
             package: "clustering_google_maps");
-      } else if (a.count < 1000) {
+      } else if (a.count < 50) {
+        // + 25
         bitmapDescriptor = BitmapDescriptor.fromAsset("assets/images/m3.png",
             package: "clustering_google_maps");
-      } else {
+      } else if (a.count < 100) {
+        // + 50
         bitmapDescriptor = BitmapDescriptor.fromAsset("assets/images/m4.png",
+            package: "clustering_google_maps");
+      } else if (a.count < 500) {
+        // + 100
+        bitmapDescriptor = BitmapDescriptor.fromAsset("assets/images/m5.png",
+            package: "clustering_google_maps");
+      } else if (a.count < 1000) {
+        // +500
+        bitmapDescriptor = BitmapDescriptor.fromAsset("assets/images/m6.png",
+            package: "clustering_google_maps");
+      } else {
+        // + 1k
+        bitmapDescriptor = BitmapDescriptor.fromAsset("assets/images/m7.png",
             package: "clustering_google_maps");
       }
 
       mapController.addMarker(MarkerOptions(
         position: a.location,
         icon: bitmapDescriptor,
+        infoWindowText: InfoWindowText(a.count.toString(), null)
       ));
     });
   }
