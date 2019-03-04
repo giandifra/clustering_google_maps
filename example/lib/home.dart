@@ -13,12 +13,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-
   ClusteringHelper clusteringHelper;
   final CameraPosition initialCameraPosition =
       CameraPosition(target: LatLng(0.000000, 0.000000), zoom: 0.0);
 
+  Set<Marker> markers = Set();
+
   void _onMapCreated(GoogleMapController mapController) async {
+    print("onMapCreated");
     final Database database = await AppDatabase.get().getDb();
     clusteringHelper = ClusteringHelper.forDB(
       database: database,
@@ -27,7 +29,14 @@ class _HomeScreenState extends State<HomeScreen> {
       dbLatColumn: FakePoint.dbLat,
       dbLongColumn: FakePoint.dbLong,
       dbTable: FakePoint.tblFakePoints,
+      updateMarkers: updateMarkers,
     );
+  }
+
+  updateMarkers(Set<Marker> markers) {
+    setState(() {
+      this.markers = markers;
+    });
   }
 
   @override
@@ -40,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onMapCreated: _onMapCreated,
         trackCameraPosition: true,
         initialCameraPosition: initialCameraPosition,
+        markers: markers,
       ),
     );
   }

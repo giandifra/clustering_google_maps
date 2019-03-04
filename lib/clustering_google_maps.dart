@@ -1,5 +1,7 @@
 library clustering_google_maps;
 
+import 'dart:async';
+
 import 'package:clustering_google_maps/src/aggregated_points.dart';
 import 'package:clustering_google_maps/src/db_helper.dart';
 import 'package:clustering_google_maps/src/lat_lang_geohash.dart';
@@ -32,6 +34,7 @@ class ClusteringHelper {
     @required this.dbLatColumn,
     @required this.dbLongColumn,
     @required this.dbGeohashColumn,
+    @required this.updateMarkers,
     this.maxZoomForAggregatePoints = 13.5,
     this.bitmapAssetPathForSingleMarker,
     this.rangeZoomUpdate = 0.5,
@@ -92,6 +95,9 @@ class ClusteringHelper {
   // if null the class use the default function
   Function showSinglePoint;
 
+  //Function for update Markers on Google Map
+  Function updateMarkers;
+
   List<LatLngAndGeohash> list;
 
   Future<void> _onMapChanged({bool forceUpdate = false}) async {
@@ -105,7 +111,7 @@ class ClusteringHelper {
         print("force update : " + forceUpdate.toString());
         _previousZoom = zoom;
         print("previous zoom: " + _previousZoom.toString());
-        await mapController.clearMarkers();
+
         if (zoom < maxZoomForAggregatePoints) {
           updateAggregatedPoints(zoom: zoom);
         } else {
@@ -162,39 +168,39 @@ class ClusteringHelper {
   final List<AggregatedPoints> aggList = [];
 
   // NOT RECCOMENDED for good performance (SQLite IS BETTER)
-//  List<AggregatedPoints> _retrieveAggregatedPoints(
-//      List<LatLngAndGeohash> inputList,
-//      List<AggregatedPoints> resultList,
-//      int level) {
-//    print("input list lenght: " + inputList.length.toString());
-//
-//    if (inputList.isEmpty) {
-//      return resultList;
-//    }
-//    final List<LatLngAndGeohash> newInputList = List.from(inputList);
-//    List<LatLngAndGeohash> tmp;
-//    final t = newInputList[0].geohash.substring(0, level);
-//    tmp =
-//        newInputList.where((p) => p.geohash.substring(0, level) == t).toList();
-//    newInputList.removeWhere((p) => p.geohash.substring(0, level) == t);
-//    double latitude = 0;
-//    double longitude = 0;
-//    tmp.forEach((l) {
-//      latitude += l.location.latitude;
-//      longitude += l.location.longitude;
-//    });
-//    final count = tmp.length;
-//    final a =
-//        AggregatedPoints(LatLng(latitude / count, longitude / count), count);
-//    resultList.add(a);
-//    return _retrieveAggregatedPoints(newInputList, resultList, level);
-//  }
+  List<AggregatedPoints> _retrieveAggregatedPoints(
+      List<LatLngAndGeohash> inputList,
+      List<AggregatedPoints> resultList,
+      int level) {
+    print("input list lenght: " + inputList.length.toString());
+
+    if (inputList.isEmpty) {
+      return resultList;
+    }
+    final List<LatLngAndGeohash> newInputList = List.from(inputList);
+    List<LatLngAndGeohash> tmp;
+    final t = newInputList[0].geohash.substring(0, level);
+    tmp =
+        newInputList.where((p) => p.geohash.substring(0, level) == t).toList();
+    newInputList.removeWhere((p) => p.geohash.substring(0, level) == t);
+    double latitude = 0;
+    double longitude = 0;
+    tmp.forEach((l) {
+      latitude += l.location.latitude;
+      longitude += l.location.longitude;
+    });
+    final count = tmp.length;
+    final a =
+        AggregatedPoints(LatLng(latitude / count, longitude / count), count);
+    resultList.add(a);
+    return _retrieveAggregatedPoints(newInputList, resultList, level);
+  }
 
   updateAggregatedPoints({double zoom = 0.0}) async {
     List<AggregatedPoints> aggregation = await getAggregatedPoints(zoom);
     print("aggregation lenght: " + aggregation.length.toString());
 
-    aggregation.forEach((a) {
+    final markers = aggregation.map((a) {
       BitmapDescriptor bitmapDescriptor;
       if (a.count == 1) {
         if (bitmapAssetPathForSingleMarker != null) {
@@ -203,57 +209,49 @@ class ClusteringHelper {
         } else {
           bitmapDescriptor = BitmapDescriptor.defaultMarker;
         }
-      } else if (a.count < 10) {
-        // + 2
-        bitmapDescriptor = BitmapDescriptor.fromAsset("assets/images/m1.png",
-            package: "clustering_google_maps");
-      } else if (a.count < 25) {
-        // + 10
-        bitmapDescriptor = BitmapDescriptor.fromAsset("assets/images/m2.png",
-            package: "clustering_google_maps");
-      } else if (a.count < 50) {
-        // + 25
-        bitmapDescriptor = BitmapDescriptor.fromAsset("assets/images/m3.png",
-            package: "clustering_google_maps");
-      } else if (a.count < 100) {
-        // + 50
-        bitmapDescriptor = BitmapDescriptor.fromAsset("assets/images/m4.png",
-            package: "clustering_google_maps");
-      } else if (a.count < 500) {
-        // + 100
-        bitmapDescriptor = BitmapDescriptor.fromAsset("assets/images/m5.png",
-            package: "clustering_google_maps");
-      } else if (a.count < 1000) {
-        // +500
-        bitmapDescriptor = BitmapDescriptor.fromAsset("assets/images/m6.png",
-            package: "clustering_google_maps");
       } else {
-        // + 1k
-        bitmapDescriptor = BitmapDescriptor.fromAsset("assets/images/m7.png",
+        // >1
+        bitmapDescriptor = BitmapDescriptor.fromAsset(a.bitmabAssetName,
             package: "clustering_google_maps");
       }
+      final String markerIdVal = a.location.latitude.toString() + "_${a.count}";
+      final MarkerId markerId = MarkerId(markerIdVal);
 
-      mapController.addMarker(MarkerOptions(
+      return Marker(
+        markerId: markerId,
         position: a.location,
+        infoWindow: InfoWindow(title: a.count.toString()),
         icon: bitmapDescriptor,
-        infoWindowText: InfoWindowText(a.count.toString(), null)
-      ));
-    });
+        onTap: () {
+          print("tap marker");
+        },
+      );
+    }).toSet();
+    updateMarkers(markers);
   }
 
   updatePoints(double zoom) async {
     print("update single points");
     if (database != null) {
-      final l = await DBHelper.getPoints(
+      final listOfPoints = await DBHelper.getPoints(
           database, dbTable, dbLatColumn, dbLongColumn);
-      l.forEach((p) {
-        mapController.addMarker(MarkerOptions(
+      final markers = listOfPoints.map((p) {
+        final String markerIdVal = p.location.latitude.toString() +
+            "_" +
+            p.location.longitude.toString();
+        final MarkerId markerId = MarkerId(markerIdVal);
+        return Marker(
+          markerId: markerId,
           position: p.location,
           icon: bitmapAssetPathForSingleMarker != null
               ? BitmapDescriptor.fromAsset(bitmapAssetPathForSingleMarker)
               : BitmapDescriptor.defaultMarker,
-        ));
-      });
+          onTap: () {
+            print("tap marker");
+          },
+        );
+      }).toSet();
+      updateMarkers(markers);
     } else {
 //      list.forEach((p) {
 //        mapController.addMarker(MarkerOptions(
