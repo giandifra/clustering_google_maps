@@ -1,20 +1,22 @@
 import 'package:clustering_google_maps/src/aggregated_points.dart';
 import 'package:clustering_google_maps/src/lat_lang_geohash.dart';
+import 'package:meta/meta.dart';
 import 'package:sqflite/sqflite.dart';
 
 class DBHelper {
   static Future<List<AggregatedPoints>> getAggregatedPoints(
-      Database database,
-      String dbTable,
-      String dbLatColumn,
-      String dbLongColumn,
-      String dbGeohashColumn,
-      int level) async {
+      {@required Database database,
+      @required String dbTable,
+      @required String dbLatColumn,
+      @required String dbLongColumn,
+      @required String dbGeohashColumn,
+      @required int level,
+      String whereClause = ""}) async {
     print("--------- START QUERY AGGREGATION");
     try {
       var result = await database.rawQuery(
-          'SELECT COUNT(*) as n_marker, AVG($dbLatColumn) as lat,  AVG($dbLongColumn) as long '
-          'FROM $dbTable GROUP BY substr($dbGeohashColumn,1,$level);');
+          'SELECT COUNT(*) as n_marker, AVG($dbLatColumn) as lat, AVG($dbLongColumn) as long '
+          'FROM $dbTable $whereClause GROUP BY substr($dbGeohashColumn,1,$level);');
 
       List<AggregatedPoints> aggregatedPoints = new List();
 
@@ -33,15 +35,15 @@ class DBHelper {
   }
 
   static Future<List<LatLngAndGeohash>> getPoints(
-    Database database,
-    String dbTable,
-    String dbLatColumn,
-    String dbLongColumn,
-  ) async {
+      {@required Database database,
+      @required String dbTable,
+      @required String dbLatColumn,
+      @required String dbLongColumn,
+      String whereClause = ""}) async {
     try {
       var result = await database
           .rawQuery('SELECT $dbLatColumn as lat, $dbLongColumn as long '
-              'FROM $dbTable;');
+              'FROM $dbTable $whereClause;');
       List<LatLngAndGeohash> points = new List();
       for (Map<String, dynamic> item in result) {
         var p = new LatLngAndGeohash.fromMap(item);

@@ -15,7 +15,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   ClusteringHelper clusteringHelper;
   final CameraPosition initialCameraPosition =
-      CameraPosition(target: LatLng(0.000000, 0.000000), zoom: 0.0);
+  CameraPosition(target: LatLng(0.000000, 0.000000), zoom: 0.0);
 
   Set<Marker> markers = Set();
 
@@ -51,6 +51,12 @@ class _HomeScreenState extends State<HomeScreen> {
         initialCameraPosition: initialCameraPosition,
         markers: markers,
       ),
+      floatingActionButton: FloatingActionButton(
+          child: Icon(Icons.content_cut),
+          onPressed: () {
+        clusteringHelper.whereClause = "WHERE ${FakePoint.dbLat} > 42.6";
+        clusteringHelper.onMapChanged(forceUpdate: true);
+      }),
     );
   }
 }

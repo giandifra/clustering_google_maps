@@ -1,3 +1,7 @@
+## 0.0.3
+
+* Add optional WHERE clause for SQL query
+
 ## 0.0.2
 
 * Migrate to google_maps_flutter: 0.3.0+2

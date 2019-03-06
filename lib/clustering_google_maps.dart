@@ -1,7 +1,6 @@
 library clustering_google_maps;
 
 import 'dart:async';
-
 import 'package:clustering_google_maps/src/aggregated_points.dart';
 import 'package:clustering_google_maps/src/db_helper.dart';
 import 'package:clustering_google_maps/src/lat_lang_geohash.dart';
@@ -38,6 +37,7 @@ class ClusteringHelper {
     this.maxZoomForAggregatePoints = 13.5,
     this.bitmapAssetPathForSingleMarker,
     this.rangeZoomUpdate = 0.5,
+    this.whereClause = "",
   })  : assert(!rangeZoomUpdate.isNegative),
         assert(mapController != null),
         assert(database != null),
@@ -45,9 +45,9 @@ class ClusteringHelper {
         assert(dbGeohashColumn != null),
         assert(dbLongColumn != null),
         assert(dbLatColumn != null) {
-    this.mapController.addListener(_onMapChanged);
+    this.mapController.addListener(onMapChanged);
     updateAggregatedPoints();
-    _onMapChanged(forceUpdate: true);
+    onMapChanged(forceUpdate: true);
   }
 
   //Controller for a single GoogleMap instance running on the host platform.
@@ -88,6 +88,9 @@ class ClusteringHelper {
   // the difference is 6.0 - 5.5 = 0.5 , so the aggregated points are NOT refreshed
   final double rangeZoomUpdate;
 
+  //Where clause for query db
+  String whereClause;
+
   //Variable for save the last zoom
   double _previousZoom = 0.0;
 
@@ -100,7 +103,7 @@ class ClusteringHelper {
 
   List<LatLngAndGeohash> list;
 
-  Future<void> _onMapChanged({bool forceUpdate = false}) async {
+  Future<void> onMapChanged({bool forceUpdate = false}) async {
     if (!mapController.isCameraMoving) {
       final zoom = mapController.cameraPosition.zoom;
       print("previuos zoom: " + _previousZoom.toString());
@@ -129,7 +132,7 @@ class ClusteringHelper {
   // NOT RECCOMENDED for good performance (SQL IS BETTER)
   updateData(List<LatLngAndGeohash> newList) {
     list = newList;
-    _onMapChanged(forceUpdate: true);
+    onMapChanged(forceUpdate: true);
   }
 
   Future<List<AggregatedPoints>> getAggregatedPoints(double zoom) async {
@@ -154,8 +157,14 @@ class ClusteringHelper {
 
     try {
       final List<AggregatedPoints> aggregatedPoints =
-          await DBHelper.getAggregatedPoints(database, dbTable, dbLatColumn,
-              dbLongColumn, dbGeohashColumn, level);
+          await DBHelper.getAggregatedPoints(
+              database: database,
+              dbTable: dbTable,
+              dbLatColumn: dbLatColumn,
+              dbLongColumn: dbLongColumn,
+              dbGeohashColumn: dbGeohashColumn,
+              level: level,
+              whereClause: whereClause);
 
       print(
           "reading complete aggregation pooints : ${aggregatedPoints.length}");
@@ -234,7 +243,11 @@ class ClusteringHelper {
     print("update single points");
     if (database != null) {
       final listOfPoints = await DBHelper.getPoints(
-          database, dbTable, dbLatColumn, dbLongColumn);
+          database: database,
+          dbTable: dbTable,
+          dbLatColumn: dbLatColumn,
+          dbLongColumn: dbLongColumn,
+          whereClause: whereClause);
       final markers = listOfPoints.map((p) {
         final String markerIdVal = p.location.latitude.toString() +
             "_" +
@@ -243,12 +256,12 @@ class ClusteringHelper {
         return Marker(
           markerId: markerId,
           position: p.location,
+          infoWindow: InfoWindow(
+              title:
+                  "${p.location.latitude.toStringAsFixed(2)},${p.location.longitude.toStringAsFixed(2)}"),
           icon: bitmapAssetPathForSingleMarker != null
               ? BitmapDescriptor.fromAsset(bitmapAssetPathForSingleMarker)
               : BitmapDescriptor.defaultMarker,
-          onTap: () {
-            print("tap marker");
-          },
         );
       }).toSet();
       updateMarkers(markers);
