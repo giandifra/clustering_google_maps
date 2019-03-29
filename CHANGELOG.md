@@ -1,3 +1,8 @@
+## 0.0.4
+
+* Migrate to google_maps_flutter: 0.4.0
+* Remove rangeZoomUpdate properties (now the map will update eith onMoveIdle callback)
+
 ## 0.0.3
 
 * Add optional WHERE clause for SQL query

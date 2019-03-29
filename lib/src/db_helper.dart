@@ -14,6 +14,9 @@ class DBHelper {
       String whereClause = ""}) async {
     print("--------- START QUERY AGGREGATION");
     try {
+      if(database == null){
+        throw Exception("Database must not be null");
+      }
       var result = await database.rawQuery(
           'SELECT COUNT(*) as n_marker, AVG($dbLatColumn) as lat, AVG($dbLongColumn) as long '
           'FROM $dbTable $whereClause GROUP BY substr($dbGeohashColumn,1,$level);');

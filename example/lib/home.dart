@@ -15,22 +15,14 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   ClusteringHelper clusteringHelper;
   final CameraPosition initialCameraPosition =
-  CameraPosition(target: LatLng(0.000000, 0.000000), zoom: 0.0);
+      CameraPosition(target: LatLng(0.000000, 0.000000), zoom: 0.0);
 
   Set<Marker> markers = Set();
 
   void _onMapCreated(GoogleMapController mapController) async {
     print("onMapCreated");
-    final Database database = await AppDatabase.get().getDb();
-    clusteringHelper = ClusteringHelper.forDB(
-      database: database,
-      mapController: mapController,
-      dbGeohashColumn: FakePoint.dbGeohash,
-      dbLatColumn: FakePoint.dbLat,
-      dbLongColumn: FakePoint.dbLong,
-      dbTable: FakePoint.tblFakePoints,
-      updateMarkers: updateMarkers,
-    );
+    clusteringHelper.database = await AppDatabase.get().getDb();
+    clusteringHelper.updateMap();
   }
 
   updateMarkers(Set<Marker> markers) {
@@ -40,23 +32,41 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  void initState() {
+    initClustering();
+    super.initState();
+  }
+
+  initClustering() {
+    clusteringHelper = ClusteringHelper.forDB(
+      dbGeohashColumn: FakePoint.dbGeohash,
+      dbLatColumn: FakePoint.dbLat,
+      dbLongColumn: FakePoint.dbLong,
+      dbTable: FakePoint.tblFakePoints,
+      updateMarkers: updateMarkers,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    print("build");
     return Scaffold(
       appBar: AppBar(
         title: Text("Clustering Example"),
       ),
       body: GoogleMap(
         onMapCreated: _onMapCreated,
-        trackCameraPosition: true,
         initialCameraPosition: initialCameraPosition,
         markers: markers,
+        onCameraMove: clusteringHelper.onCameraMove,
+        onCameraIdle: clusteringHelper.onMapIdle,
       ),
       floatingActionButton: FloatingActionButton(
           child: Icon(Icons.content_cut),
           onPressed: () {
-        clusteringHelper.whereClause = "WHERE ${FakePoint.dbLat} > 42.6";
-        clusteringHelper.onMapChanged(forceUpdate: true);
-      }),
+            clusteringHelper.whereClause = "WHERE ${FakePoint.dbLat} > 42.6";
+            clusteringHelper.updateMap();
+          }),
     );
   }
 }
