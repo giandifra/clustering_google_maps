@@ -1,6 +1,7 @@
 import 'package:example/home.dart';
 import 'package:example/splash_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:clustering_google_maps/clustering_google_maps.dart';
 
 class Splash extends StatefulWidget {
   @override
@@ -27,48 +28,77 @@ class SplashState extends State<Splash> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             RaisedButton(
-                child: Text('Load Fake Data'),
-                onPressed: loading
-                    ? null
-                    : () async {
-                        try {
-                          setState(() {
-                            loading = true;
-                          });
-                          await bloc.addFakePointsToDB(context);
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => HomeScreen()));
-                        } catch (e) {
-                          showDialog(
-                              context: context,
-                              builder: (context) {
-                                return Column(
-                                  children: <Widget>[
-                                    Text('Error'),
-                                    Text(e.toString()),
-                                  ],
-                                );
-                              });
-                        }
-                      }),
+              child: Text('Load Fake Data into Database'),
+              onPressed: loading
+                  ? null
+                  : () async {
+                      try {
+                        setState(() {
+                          loading = true;
+                        });
+                        await bloc.addFakePointsToDB(context);
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HomeScreen(),
+                          ),
+                        );
+                        setState(() {
+                          loading = false;
+                        });
+                      } catch (e) {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return Column(
+                              children: <Widget>[
+                                Text('Error'),
+                                Text(e.toString()),
+                              ],
+                            );
+                          },
+                        );
+                      }
+                    },
+            ),
             RaisedButton(
-                child: Text('Go to Map'),
-                onPressed: loading
-                    ? null
-                    : () {
-                        goToHome(context);
-                      }),
+              child: Text('Load Fake Data into Memory'),
+              onPressed: loading
+                  ? null
+                  : () async {
+                try {
+                  setState(() {
+                    loading = true;
+                  });
+                 final List<LatLngAndGeohash> list =  await bloc.getListOfLatLngAndGeohash(context);
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => HomeScreen(list:list),
+                    ),
+                  );
+                  setState(() {
+                    loading = false;
+                  });
+                } catch (e) {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return Column(
+                        children: <Widget>[
+                          Text('Error'),
+                          Text(e.toString()),
+                        ],
+                      );
+                    },
+                  );
+                }
+              },
+            ),
             loading ? CircularProgressIndicator() : Container(),
           ],
         ),
       ),
     );
-  }
-
-  goToHome(context) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (context) => HomeScreen()));
   }
 }

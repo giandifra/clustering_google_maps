@@ -2,11 +2,12 @@ import 'package:example/app_db.dart';
 import 'package:example/fake_point.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:clustering_google_maps/clustering_google_maps.dart';
 
 class HomeScreen extends StatefulWidget {
-  HomeScreen({Key key}) : super(key: key);
+  final List<LatLngAndGeohash> list;
+
+  HomeScreen({Key key, this.list}) : super(key: key);
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -21,7 +22,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onMapCreated(GoogleMapController mapController) async {
     print("onMapCreated");
-    clusteringHelper.database = await AppDatabase.get().getDb();
+    if (widget.list == null) {
+      clusteringHelper.database = await AppDatabase.get().getDb();
+    }
     clusteringHelper.updateMap();
   }
 
@@ -33,11 +36,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void initState() {
-    initClustering();
+    if (widget.list != null) {
+      initMemoryClustering();
+    } else {
+      initDatabaseClustering();
+    }
+
     super.initState();
   }
 
-  initClustering() {
+  // For db solution
+  initDatabaseClustering() {
     clusteringHelper = ClusteringHelper.forDB(
       dbGeohashColumn: FakePoint.dbGeohash,
       dbLatColumn: FakePoint.dbLat,
@@ -47,9 +56,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // For memory solution
+  initMemoryClustering() {
+    clusteringHelper = ClusteringHelper.forMemory(
+      list: widget.list,
+      updateMarkers: updateMarkers,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    print("build");
     return Scaffold(
       appBar: AppBar(
         title: Text("Clustering Example"),
@@ -58,15 +74,21 @@ class _HomeScreenState extends State<HomeScreen> {
         onMapCreated: _onMapCreated,
         initialCameraPosition: initialCameraPosition,
         markers: markers,
-        onCameraMove: clusteringHelper.onCameraMove,
+        onCameraMove: (newPosition) => clusteringHelper.onCameraMove(newPosition, forceUpdate: false),
         onCameraIdle: clusteringHelper.onMapIdle,
       ),
       floatingActionButton: FloatingActionButton(
-          child: Icon(Icons.content_cut),
-          onPressed: () {
+        child:
+            widget.list == null ? Icon(Icons.content_cut) : Icon(Icons.update),
+        onPressed: () {
+          if (widget.list == null) {
+            //Test WHERE CLAUSE
             clusteringHelper.whereClause = "WHERE ${FakePoint.dbLat} > 42.6";
-            clusteringHelper.updateMap();
-          }),
+          }
+          //Force map update
+          clusteringHelper.updateMap();
+        },
+      ),
     );
   }
 }

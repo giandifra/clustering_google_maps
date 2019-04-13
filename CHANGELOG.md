@@ -1,7 +1,14 @@
+## 0.0.4.1
+
+* Add memory clustering fuction, now you can use clustering with a list of LatLngAndGeohash object
+* Add memory clustering to example
+* Now you can update the map during the user move or zoom the map (NOT RECOMMENDED)
+* Update Readme 
+
 ## 0.0.4
 
 * Migrate to google_maps_flutter: 0.4.0
-* Remove rangeZoomUpdate properties (now the map will update eith onMoveIdle callback)
+* Remove rangeZoomUpdate properties (now the map will update with onMoveIdle callback)
 
 ## 0.0.3
 

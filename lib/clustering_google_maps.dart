@@ -1,5 +1,7 @@
 library clustering_google_maps;
 
+export 'package:clustering_google_maps/src/lat_lang_geohash.dart';
+
 import 'dart:async';
 import 'package:clustering_google_maps/src/aggregated_points.dart';
 import 'package:clustering_google_maps/src/db_helper.dart';
@@ -24,6 +26,13 @@ class ClusteringHelper {
         assert(dbLongColumn != null),
         assert(dbLatColumn != null);
 
+  ClusteringHelper.forMemory({
+    @required this.list,
+    @required this.updateMarkers,
+    this.maxZoomForAggregatePoints = 13.5,
+    this.bitmapAssetPathForSingleMarker,
+  }) : assert(list != null);
+
   //After this value the map show the single points without aggregation
   final double maxZoomForAggregatePoints;
 
@@ -31,16 +40,16 @@ class ClusteringHelper {
   Database database;
 
   //Name of table of the databasa SQLite where are stored the latitude, longitude and geoahash value
-  final String dbTable;
+  String dbTable;
 
   //Name of column where is stored the latitude
-  final String dbLatColumn;
+  String dbLatColumn;
 
   //Name of column where is stored the longitude
-  final String dbLongColumn;
+  String dbLongColumn;
 
   //Name of column where is stored the geohash value
-  final String dbGeohashColumn;
+  String dbGeohashColumn;
 
   //Custom bitmap: string of assets position
   final String bitmapAssetPathForSingleMarker;
@@ -49,7 +58,7 @@ class ClusteringHelper {
   String whereClause;
 
   //Variable for save the last zoom
-  double _previousZoom = 0.0;
+  double _currentZoom = 0.0;
 
   //Function called when the map must show single point without aggregation
   // if null the class use the default function
@@ -58,25 +67,32 @@ class ClusteringHelper {
   //Function for update Markers on Google Map
   Function updateMarkers;
 
+  //List of points for memory clustering
   List<LatLngAndGeohash> list;
 
-  onCameraMove(CameraPosition position) {
-    final zoom = position.zoom;
-    _previousZoom = zoom;
+  //Call during the editing of CameraPosition
+  //If you want updateMap during the zoom in/out set forceUpdate to true
+  //this is NOT RECCOMENDED
+  onCameraMove(CameraPosition position, {forceUpdate = false}) {
+    _currentZoom = position.zoom;
+    if (forceUpdate) {
+      updateMap();
+    }
   }
 
+  //Call when user stop to move or zoom the map
   Future<void> onMapIdle() async {
     updateMap();
   }
 
   updateMap() {
-    if (_previousZoom < maxZoomForAggregatePoints) {
-      updateAggregatedPoints(zoom: _previousZoom);
+    if (_currentZoom < maxZoomForAggregatePoints) {
+      updateAggregatedPoints(zoom: _currentZoom);
     } else {
       if (showSinglePoint != null) {
         showSinglePoint();
       } else {
-        updatePoints(_previousZoom);
+        updatePoints(_currentZoom);
       }
     }
   }
@@ -109,15 +125,19 @@ class ClusteringHelper {
     }
 
     try {
-      final List<AggregatedPoints> aggregatedPoints =
-          await DBHelper.getAggregatedPoints(
-              database: database,
-              dbTable: dbTable,
-              dbLatColumn: dbLatColumn,
-              dbLongColumn: dbLongColumn,
-              dbGeohashColumn: dbGeohashColumn,
-              level: level,
-              whereClause: whereClause);
+      List<AggregatedPoints> aggregatedPoints;
+      if (database != null) {
+        aggregatedPoints = await DBHelper.getAggregatedPoints(
+            database: database,
+            dbTable: dbTable,
+            dbLatColumn: dbLatColumn,
+            dbLongColumn: dbLongColumn,
+            dbGeohashColumn: dbGeohashColumn,
+            level: level,
+            whereClause: whereClause);
+      } else {
+        aggregatedPoints = _retrieveAggregatedPoints(list, List(), level);
+      }
       return aggregatedPoints;
     } catch (e) {
       print(e.toString());
@@ -193,13 +213,19 @@ class ClusteringHelper {
   updatePoints(double zoom) async {
     print("update single points");
     try {
-      final listOfPoints = await DBHelper.getPoints(
-          database: database,
-          dbTable: dbTable,
-          dbLatColumn: dbLatColumn,
-          dbLongColumn: dbLongColumn,
-          whereClause: whereClause);
-      final markers = listOfPoints.map((p) {
+      List<LatLngAndGeohash> listOfPoints;
+      if (database != null) {
+        listOfPoints = await DBHelper.getPoints(
+            database: database,
+            dbTable: dbTable,
+            dbLatColumn: dbLatColumn,
+            dbLongColumn: dbLongColumn,
+            whereClause: whereClause);
+      } else {
+        listOfPoints = list;
+      }
+
+      final Set<Marker> markers = listOfPoints.map((p) {
         final String markerIdVal = p.location.latitude.toString() +
             "_" +
             p.location.longitude.toString();

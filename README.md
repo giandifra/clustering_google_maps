@@ -13,41 +13,61 @@ A Flutter package that recreate clustering technique in a [Google Maps](https://
 
 ## Developers Preview Status
 The package recreate the CLUSTERING technique in a Google Maps. 
-It's work with data recordered in a dababase SQLite. I use [sqflite](https://pub.dartlang.org/packages/sqflite)
+It's work with data recordered in a dababase SQLite. I use [sqflite](https://pub.dartlang.org/packages/sqflite) (DB TECHNIQUE)
+It's work with a list of LatLngAndGeohash object. (MEMORY TECHNIQUE)
 
 ## Usage
 
 To use this package, add `clustering_google_maps` as a [dependency in your pubspec.yaml file](https://flutter.io/platform-plugins/).
 
 For a better performance, at every zoom variation on the map, the package performs
-a specific query on the SQLite database. This solution is better than loading all
-points in memory (in a list) and then aggregating points on the map. 
+a specific query on the SQLite database, but you can force update with updateMap() method.
 
 ## Getting Started
 
-For the package to work properly, you must have the data of the points saved in a SQLite database.
+### DB TECHNIQUE
+To work properly, you must have the data of the points saved in a SQLite database.
 Latitude, longitude and the string of geohash. These three parameters are necessary for correct operation.
 If you have not saved the [GEOHASH](https://pub.dartlang.org/packages/geohash), I suggest you install [GEOHASH](https://pub.dartlang.org/packages/geohash)
 plugin and save the value of Geohash in the points table of db.
 
-### Future Implementations
+For this solution you must use the db constructor of ClusteringHelper:
+
+```dart
+ClusteringHelper.forDB(...);
+```
+
+### MEMORY TECHNIQUE
+
+To work properly you must have a list of LatLngAndGeohash object. LatLngAndGeohash is a simple object with Location 
+and Geohash property, the last is generated automatically; you need only location of the point.
+
+For this solution you must use the MEMORY constructor of ClusteringHelper:
+
+```dart
+ClusteringHelper.forMemory(...);
+```
+
+
+## Future Implementations
 
 - To further improve performance I am creating a way to perform sql queries only on the latlng bounding box displayed on the map. 
 - I will insert custom marker with number of points. But for now [Google Maps](https://developers.google.com/maps/) widget does not allow
   custom widget from dart but only static Bitmap
 
-### Quick Example
+## Quick Example for both solution
 
 ```dart
 import 'package:example/app_db.dart';
 import 'package:example/fake_point.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:clustering_google_maps/clustering_google_maps.dart';
 
 class HomeScreen extends StatefulWidget {
-  HomeScreen({Key key}) : super(key: key);
+  final List<LatLngAndGeohash> list;
+
+  HomeScreen({Key key, this.list}) : super(key: key);
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -62,7 +82,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onMapCreated(GoogleMapController mapController) async {
     print("onMapCreated");
-    clusteringHelper.database = await AppDatabase.get().getDb();
+    if (widget.list == null) {
+      clusteringHelper.database = await AppDatabase.get().getDb();
+    }
     clusteringHelper.updateMap();
   }
 
@@ -74,11 +96,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void initState() {
-    initClustering();
+    if (widget.list != null) {
+      initMemoryClustering();
+    } else {
+      initDatabaseClustering();
+    }
+
     super.initState();
   }
 
-  initClustering() {
+  // For db solution
+  initDatabaseClustering() {
     clusteringHelper = ClusteringHelper.forDB(
       dbGeohashColumn: FakePoint.dbGeohash,
       dbLatColumn: FakePoint.dbLat,
@@ -88,9 +116,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // For memory solution
+  initMemoryClustering() {
+    clusteringHelper = ClusteringHelper.forMemory(
+      list: widget.list,
+      updateMarkers: updateMarkers,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    print("build");
     return Scaffold(
       appBar: AppBar(
         title: Text("Clustering Example"),
@@ -99,15 +134,21 @@ class _HomeScreenState extends State<HomeScreen> {
         onMapCreated: _onMapCreated,
         initialCameraPosition: initialCameraPosition,
         markers: markers,
-        onCameraMove: clusteringHelper.onCameraMove,
+        onCameraMove: (newPosition) => clusteringHelper.onCameraMove(newPosition, forceUpdate: false),
         onCameraIdle: clusteringHelper.onMapIdle,
       ),
       floatingActionButton: FloatingActionButton(
-          child: Icon(Icons.content_cut),
-          onPressed: () {
+        child:
+            widget.list == null ? Icon(Icons.content_cut) : Icon(Icons.update),
+        onPressed: () {
+          if (widget.list == null) {
             clusteringHelper.whereClause = "WHERE ${FakePoint.dbLat} > 42.6";
             clusteringHelper.updateMap();
-          }),
+          } else {
+            clusteringHelper.updateMap();
+          }
+        },
+      ),
     );
   }
 }

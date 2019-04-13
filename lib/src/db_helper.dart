@@ -14,7 +14,7 @@ class DBHelper {
       String whereClause = ""}) async {
     print("--------- START QUERY AGGREGATION");
     try {
-      if(database == null){
+      if (database == null) {
         throw Exception("Database must not be null");
       }
       var result = await database.rawQuery(
