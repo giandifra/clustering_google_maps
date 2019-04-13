@@ -66,34 +66,35 @@ class SplashState extends State<Splash> {
               onPressed: loading
                   ? null
                   : () async {
-                try {
-                  setState(() {
-                    loading = true;
-                  });
-                 final List<LatLngAndGeohash> list =  await bloc.getListOfLatLngAndGeohash(context);
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => HomeScreen(list:list),
-                    ),
-                  );
-                  setState(() {
-                    loading = false;
-                  });
-                } catch (e) {
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      return Column(
-                        children: <Widget>[
-                          Text('Error'),
-                          Text(e.toString()),
-                        ],
-                      );
+                      try {
+                        setState(() {
+                          loading = true;
+                        });
+                        final List<LatLngAndGeohash> list =
+                            await bloc.getListOfLatLngAndGeohash(context);
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HomeScreen(list: list),
+                          ),
+                        );
+                        setState(() {
+                          loading = false;
+                        });
+                      } catch (e) {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return Column(
+                              children: <Widget>[
+                                Text('Error'),
+                                Text(e.toString()),
+                              ],
+                            );
+                          },
+                        );
+                      }
                     },
-                  );
-                }
-              },
             ),
             loading ? CircularProgressIndicator() : Container(),
           ],

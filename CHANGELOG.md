@@ -1,4 +1,4 @@
-## 0.0.4.1
+## 0.0.4+1
 
 * Add memory clustering fuction, now you can use clustering with a list of LatLngAndGeohash object
 * Add memory clustering to example

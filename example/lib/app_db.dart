@@ -38,12 +38,12 @@ class AppDatabase {
     String path = join(documentsDirectory.path, "clustering.db");
     _database = await openDatabase(path, version: 1,
         onCreate: (Database db, int version) async {
-          // When creating the db, create the table
-          await _createFakePointsTable(db);
-        }, onUpgrade: (Database db, int oldVersion, int newVersion) async {
-          await db.execute("DROP TABLE ${FakePoint.tblFakePoints}");
-          await _createFakePointsTable(db);
-        });
+      // When creating the db, create the table
+      await _createFakePointsTable(db);
+    }, onUpgrade: (Database db, int oldVersion, int newVersion) async {
+      await db.execute("DROP TABLE ${FakePoint.tblFakePoints}");
+      await _createFakePointsTable(db);
+    });
   }
 
   Future _createFakePointsTable(Database db) {
@@ -55,7 +55,7 @@ class AppDatabase {
   }
 
   Future<void> closeDatabase() async {
-    if(_database != null && _database.isOpen){
+    if (_database != null && _database.isOpen) {
       await _database.close();
       _database = null;
       print("database closed");

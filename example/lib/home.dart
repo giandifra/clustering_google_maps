@@ -74,7 +74,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onMapCreated: _onMapCreated,
         initialCameraPosition: initialCameraPosition,
         markers: markers,
-        onCameraMove: (newPosition) => clusteringHelper.onCameraMove(newPosition, forceUpdate: false),
+        onCameraMove: (newPosition) =>
+            clusteringHelper.onCameraMove(newPosition, forceUpdate: false),
         onCameraIdle: clusteringHelper.onMapIdle,
       ),
       floatingActionButton: FloatingActionButton(
