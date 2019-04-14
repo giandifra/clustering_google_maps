@@ -1,3 +1,8 @@
+## 0.0.4+2
+
+* Add secure MarkerId to marker
+
+
 ## 0.0.4+1
 
 * Add memory clustering fuction, now you can use clustering with a list of LatLngAndGeohash object

@@ -42,4 +42,11 @@ class AggregatedPoints {
     }
     return bitmapDescriptor;
   }
+
+  getId() {
+    return location.latitude.toString() +
+        "_" +
+        location.longitude.toString() +
+        "_$count";
+  }
 }

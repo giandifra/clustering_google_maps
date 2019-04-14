@@ -194,8 +194,7 @@ class ClusteringHelper {
         bitmapDescriptor = BitmapDescriptor.fromAsset(a.bitmabAssetName,
             package: "clustering_google_maps");
       }
-      final String markerIdVal = a.location.latitude.toString() + "_${a.count}";
-      final MarkerId markerId = MarkerId(markerIdVal);
+      final MarkerId markerId = MarkerId(a.getId());
 
       return Marker(
         markerId: markerId,
@@ -226,10 +225,7 @@ class ClusteringHelper {
       }
 
       final Set<Marker> markers = listOfPoints.map((p) {
-        final String markerIdVal = p.location.latitude.toString() +
-            "_" +
-            p.location.longitude.toString();
-        final MarkerId markerId = MarkerId(markerIdVal);
+        final MarkerId markerId = MarkerId(p.getId());
         return Marker(
           markerId: markerId,
           position: p.location,
