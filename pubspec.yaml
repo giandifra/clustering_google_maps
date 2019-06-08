@@ -1,6 +1,6 @@
 name: clustering_google_maps
 description: A Flutter package that recreate clustering technique in a Google Maps widget.
-version: 0.0.5+7
+version: 0.0.5+16
 author: Gian Marco Di Francesco <difrancescogianmarco@gmail.com>
 homepage: https://github.com/giandifra/clustering_google_maps
 
@@ -13,8 +13,8 @@ dependencies:
 
   geohash: ^0.2.1
   sqflite: ^1.1.5
-  path_provider: ^0.5.0+1
-  google_maps_flutter: 0.5.7
+  path_provider: ^1.1.0
+  google_maps_flutter: 0.5.16
   meta: ^1.1.6
 
 dev_dependencies:

@@ -28,7 +28,7 @@ class SplashBloc {
   }
 
   Future<void> addFakePointsToDB(context) async {
-    print("STAR GET FAKE DATA");
+    print("START GET FAKE DATA");
     try {
       final fakeList = await loadDataFromJson(context);
       for (int i = 0; i < fakeList.length; i++) {

@@ -1,3 +1,12 @@
+## 0.0.5+16
+
+* Migrate to google_maps_flutter: 0.5.16
+* Update path_provider package to 1.1.0
+
+## 0.0.5+13
+
+* Migrate to google_maps_flutter: 0.5.13
+
 ## 0.0.4+2
 
 * Add secure MarkerId to marker
