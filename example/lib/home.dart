@@ -22,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onMapCreated(GoogleMapController mapController) async {
     print("onMapCreated");
+    clusteringHelper.mapController = mapController;
     if (widget.list == null) {
       clusteringHelper.database = await AppDatabase.get().getDb();
     }
@@ -53,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
       dbLongColumn: FakePoint.dbLong,
       dbTable: FakePoint.tblFakePoints,
       updateMarkers: updateMarkers,
+      aggregationSetup: AggregationSetup(),
     );
   }
 
@@ -61,6 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
     clusteringHelper = ClusteringHelper.forMemory(
       list: widget.list,
       updateMarkers: updateMarkers,
+      aggregationSetup: AggregationSetup(markerSize: 250),
     );
   }
 
@@ -84,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () {
           if (widget.list == null) {
             //Test WHERE CLAUSE
-            clusteringHelper.whereClause = "WHERE ${FakePoint.dbLat} > 42.6";
+            clusteringHelper.whereClause = "${FakePoint.dbLat} > 42.6";
           }
           //Force map update
           clusteringHelper.updateMap();

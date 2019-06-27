@@ -1,3 +1,12 @@
+## 0.1.0+19
+
+* Migrate to google_maps_flutter: 0.5.19
+* Performance improvement: now sql query and memory filter are made in visible bounding box
+* New bitmap descriptor from bytes of canvas image
+* Now the count of aggregation points is showed on marker
+* Now you can setup your configuration: colors, aggregation range, zoom aggregation limits
+
+
 ## 0.0.5+16
 
 * Migrate to google_maps_flutter: 0.5.16

@@ -48,12 +48,15 @@ For this solution you must use the MEMORY constructor of ClusteringHelper:
 ClusteringHelper.forMemory(...);
 ```
 
+### Aggregation Setup
+
+Yuo can customize color, range count and zoom limit of aggregation.
+See this class: [AggregationSetup](https://github.com/giandifra/clustering_google_maps/blob/master/lib/src/aggregation_setup.dart).
 
 ## Future Implementations
 
-- To further improve performance I am creating a way to perform sql queries only on the latlng bounding box displayed on the map. 
-- I will insert custom marker with number of points. But for now [Google Maps](https://developers.google.com/maps/) widget does not allow
-  custom widget from dart but only static Bitmap
+- ~~To further improve performance I am creating a way to perform sql queries only on the latlng bounding box displayed on the map.~~
+- ~~I will insert custom marker with number of points.~~
 
 ## Quick Example for both solution
 
@@ -82,6 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onMapCreated(GoogleMapController mapController) async {
     print("onMapCreated");
+    clusteringHelper.mapController = mapController;
     if (widget.list == null) {
       clusteringHelper.database = await AppDatabase.get().getDb();
     }
@@ -113,6 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
       dbLongColumn: FakePoint.dbLong,
       dbTable: FakePoint.tblFakePoints,
       updateMarkers: updateMarkers,
+      aggregationSetup: AggregationSetup(),
     );
   }
 
@@ -121,6 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
     clusteringHelper = ClusteringHelper.forMemory(
       list: widget.list,
       updateMarkers: updateMarkers,
+      aggregationSetup: AggregationSetup(markerSize: 250),
     );
   }
 
@@ -134,7 +140,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onMapCreated: _onMapCreated,
         initialCameraPosition: initialCameraPosition,
         markers: markers,
-        onCameraMove: (newPosition) => clusteringHelper.onCameraMove(newPosition, forceUpdate: false),
+        onCameraMove: (newPosition) =>
+            clusteringHelper.onCameraMove(newPosition, forceUpdate: false),
         onCameraIdle: clusteringHelper.onMapIdle,
       ),
       floatingActionButton: FloatingActionButton(
@@ -142,11 +149,11 @@ class _HomeScreenState extends State<HomeScreen> {
             widget.list == null ? Icon(Icons.content_cut) : Icon(Icons.update),
         onPressed: () {
           if (widget.list == null) {
-            clusteringHelper.whereClause = "WHERE ${FakePoint.dbLat} > 42.6";
-            clusteringHelper.updateMap();
-          } else {
-            clusteringHelper.updateMap();
+            //Test WHERE CLAUSE
+            clusteringHelper.whereClause = "${FakePoint.dbLat} > 42.6";
           }
+          //Force map update
+          clusteringHelper.updateMap();
         },
       ),
     );
