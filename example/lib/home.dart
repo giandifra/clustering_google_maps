@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
     clusteringHelper = ClusteringHelper.forMemory(
       list: widget.list,
       updateMarkers: updateMarkers,
-      aggregationSetup: AggregationSetup(markerSize: 250),
+      aggregationSetup: AggregationSetup(markerSize: 150),
     );
   }
 

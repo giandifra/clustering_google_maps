@@ -1,7 +1,7 @@
 import 'package:geohash/geohash.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-class FakePoint {
+class FakePoint{
   static final tblFakePoints = "fakePoints";
   static final dbId = "id";
   static final dbLat = "latitude";
@@ -9,7 +9,6 @@ class FakePoint {
   static final dbGeohash = "geohash";
 
   LatLng location;
-  String secret;
   int id;
   String geohash;
 
