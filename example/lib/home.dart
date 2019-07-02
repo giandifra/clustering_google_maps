@@ -2,7 +2,7 @@ import 'package:example/app_db.dart';
 import 'package:example/fake_point.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:clustering_google_maps/clustering_google_maps.dart';
+import 'package:clustering_google_maps/clustering_google_maps.dart' show LatLngAndGeohash,ClusteringHelper,AggregationSetup;
 
 class HomeScreen extends StatefulWidget {
   final List<LatLngAndGeohash> list;
@@ -87,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () {
           if (widget.list == null) {
             //Test WHERE CLAUSE
-            clusteringHelper.whereClause = "${FakePoint.dbLat} > 42.6";
+            clusteringHelper.whereClause = "WHERE ${FakePoint.dbLat} > 42.6";
           }
           //Force map update
           clusteringHelper.updateMap();

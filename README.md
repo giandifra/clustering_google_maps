@@ -126,7 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
     clusteringHelper = ClusteringHelper.forMemory(
       list: widget.list,
       updateMarkers: updateMarkers,
-      aggregationSetup: AggregationSetup(markerSize: 250),
+      aggregationSetup: AggregationSetup(markerSize: 150),
     );
   }
 
@@ -150,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () {
           if (widget.list == null) {
             //Test WHERE CLAUSE
-            clusteringHelper.whereClause = "${FakePoint.dbLat} > 42.6";
+            clusteringHelper.whereClause = "WHERE ${FakePoint.dbLat} > 42.6";
           }
           //Force map update
           clusteringHelper.updateMap();

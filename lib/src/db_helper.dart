@@ -29,12 +29,12 @@ class DBHelper {
       );
 
       whereClause = whereClause.isEmpty
-          ? "$boundingBoxClause"
+          ? "WHERE $boundingBoxClause"
           : "$whereClause AND $boundingBoxClause";
 
       final query =
           'SELECT COUNT(*) as n_marker, AVG($dbLatColumn) as lat, AVG($dbLongColumn) as long '
-          'FROM $dbTable WHERE $whereClause GROUP BY substr($dbGeohashColumn,1,$level);';
+          'FROM $dbTable $whereClause GROUP BY substr($dbGeohashColumn,1,$level);';
       print(query);
       var result = await database.rawQuery(query);
 
