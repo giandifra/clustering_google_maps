@@ -15,7 +15,10 @@ class DBHelper {
     LatLngBounds latLngBounds,
     String whereClause = "",
   }) async {
-    print("--------- START QUERY AGGREGATION");
+    assert(() {
+      print("--------- START QUERY AGGREGATION");
+      return true;
+    }());
     try {
       if (database == null) {
         throw Exception("Database must not be null");
@@ -35,21 +38,33 @@ class DBHelper {
       final query =
           'SELECT COUNT(*) as n_marker, AVG($dbLatColumn) as lat, AVG($dbLongColumn) as long '
           'FROM $dbTable $whereClause GROUP BY substr($dbGeohashColumn,1,$level);';
-      print(query);
+      assert(() {
+        print(query);
+        return true;
+      }());
       var result = await database.rawQuery(query);
 
       List<AggregatedPoints> aggregatedPoints = new List();
 
       for (Map<String, dynamic> item in result) {
-        print(item);
+        assert(() {
+          print(item);
+          return true;
+        }());
         var p = new AggregatedPoints.fromMap(item, dbLatColumn, dbLongColumn);
         aggregatedPoints.add(p);
       }
-      print("--------- COMPLETE QUERY AGGREGATION");
+      assert(() {
+        print("--------- COMPLETE QUERY AGGREGATION");
+        return true;
+      }());
       return aggregatedPoints;
     } catch (e) {
-      print(e.toString());
-      print("--------- COMPLETE QUERY AGGREGATION WITH ERROR");
+      assert(() {
+        print(e.toString());
+        print("--------- COMPLETE QUERY AGGREGATION WITH ERROR");
+        return true;
+      }());
       return List<AggregatedPoints>();
     }
   }
@@ -69,17 +84,27 @@ class DBHelper {
         var p = new LatLngAndGeohash.fromMap(item);
         points.add(p);
       }
-      print("--------- COMPLETE QUERY");
+      assert(() {
+        print("--------- COMPLETE QUERY");
+        return true;
+      }());
+
       return points;
     } catch (e) {
-      print(e.toString());
+      assert(() {
+        print(e.toString());
+        return true;
+      }());
       return List<LatLngAndGeohash>();
     }
   }
 
   static String buildBoundingBoxClause(
       LatLngBounds latLngBounds, String dbTable, String dbLat, String dbLong) {
-    print(latLngBounds.toString());
+    assert(() {
+      print(latLngBounds.toString());
+      return true;
+    }());
     final double leftTopLatitude = latLngBounds.northeast.latitude;
     final double leftTopLongitude = latLngBounds.southwest.longitude;
     final double rightBottomLatitude = latLngBounds.southwest.latitude;

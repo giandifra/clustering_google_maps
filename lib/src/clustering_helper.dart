@@ -115,7 +115,11 @@ class ClusteringHelper {
   }
 
   Future<List<AggregatedPoints>> getAggregatedPoints(double zoom) async {
-    print("loading aggregation");
+    assert(() {
+      print("loading aggregation");
+      return true;
+    }());
+
     int level = 5;
 
     if (zoom <= aggregationSetup.maxZoomLimits[0]) {
@@ -172,7 +176,10 @@ class ClusteringHelper {
       }
       return aggregatedPoints;
     } catch (e) {
-      print(e.toString());
+      assert(() {
+        print(e.toString());
+        return true;
+      }());
       return List<AggregatedPoints>();
     }
   }
@@ -183,7 +190,10 @@ class ClusteringHelper {
       List<LatLngAndGeohash> inputList,
       List<AggregatedPoints> resultList,
       int level) {
-    print("input list lenght: " + inputList.length.toString());
+    assert(() {
+      print("input list lenght: " + inputList.length.toString());
+      return true;
+    }());
 
     if (inputList.isEmpty) {
       return resultList;
@@ -209,13 +219,20 @@ class ClusteringHelper {
 
   Future<void> updateAggregatedPoints({double zoom = 0.0}) async {
     List<AggregatedPoints> aggregation = await getAggregatedPoints(zoom);
-    print("aggregation lenght: " + aggregation.length.toString());
+
+    assert(() {
+      print("aggregation lenght: " + aggregation.length.toString());
+      return true;
+    }());
 
     final Set<Marker> markers = {};
 
     for (var i = 0; i < aggregation.length; i++) {
       final a = aggregation[i];
-      print(a.count);
+      assert(() {
+        print(a.count);
+        return true;
+      }());
 
       BitmapDescriptor bitmapDescriptor;
 
@@ -247,7 +264,11 @@ class ClusteringHelper {
   }
 
   updatePoints(double zoom) async {
-    print("update single points");
+    assert(() {
+      print("update single points");
+      return true;
+    }());
+
     try {
       List<LatLngAndGeohash> listOfPoints;
       if (database != null) {
@@ -276,7 +297,10 @@ class ClusteringHelper {
       }).toSet();
       updateMarkers(markers);
     } catch (ex) {
-      print(ex.toString());
+      assert(() {
+        print(ex.toString());
+        return true;
+      }());
     }
   }
 

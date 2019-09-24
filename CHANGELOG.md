@@ -1,3 +1,8 @@
+## 0.1.2
+
+* Migrate to google_maps_flutter: 0.5.21+3
+* Remove print in releaseMode
+
 ## 0.1.0+19
 
 * Migrate to google_maps_flutter: 0.5.19
