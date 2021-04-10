@@ -1,5 +1,5 @@
-import 'package:example/home.dart';
-import 'package:example/splash_bloc.dart';
+import 'home.dart';
+import 'splash_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:clustering_google_maps/clustering_google_maps.dart';
 

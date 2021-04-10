@@ -1,4 +1,4 @@
-import 'package:example/splash.dart';
+import 'splash.dart';
 import 'package:flutter/material.dart';
 
 void main() => runApp(MyApp());

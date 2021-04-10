@@ -1,18 +1,24 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import 'lat_lang_geohash.dart';
+
 class AggregatedPoints {
-  final LatLng location;
-  final int count;
+  LatLng _location;
+  final List<MarkerWrapper> points;
   String bitmabAssetName;
 
-  AggregatedPoints(this.location, this.count) {
-    this.bitmabAssetName = getBitmapDescriptor();
-  }
 
-  AggregatedPoints.fromMap(
-      Map<String, dynamic> map, String dbLatColumn, String dbLongColumn)
-      : count = map['n_marker'],
-        this.location = LatLng(map['lat'], map['long']) {
+  LatLng get location => _location;
+  int get count => points.length;
+
+  AggregatedPoints(this.points) {
+    double latitude = 0;
+    double longitude = 0;
+    points.forEach((l) {
+      latitude += l.location.latitude;
+      longitude += l.location.longitude;
+    });
+    _location = LatLng(latitude/count, longitude/count);
     this.bitmabAssetName = getBitmapDescriptor();
   }
 
