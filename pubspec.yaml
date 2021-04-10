@@ -13,7 +13,7 @@ dependencies:
 
   geohash: ^0.2.1
   sqflite: ^1.1.5
-  path_provider: ^1.1.0
+  path_provider: ^2.0.1
   google_maps_flutter: ^1.0.3
   meta: ^1.1.6
 
