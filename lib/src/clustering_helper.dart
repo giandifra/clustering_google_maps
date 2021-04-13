@@ -125,6 +125,7 @@ class ClusteringHelper {
 
         final bool longQuery = (leftTopLongitude < rightBottomLongitude)
             ? p.location.longitude >= leftTopLongitude &&
+                p.location.longitude <= rightBottomLongitude
             : p.location.longitude >= leftTopLongitude ||
                 p.location.longitude <= rightBottomLongitude;
         return latQuery && longQuery;
