@@ -125,7 +125,6 @@ class ClusteringHelper {
 
         final bool longQuery = (leftTopLongitude < rightBottomLongitude)
             ? p.location.longitude >= leftTopLongitude &&
-                p.location.longitude <= rightBottomLongitude
             : p.location.longitude >= leftTopLongitude ||
                 p.location.longitude <= rightBottomLongitude;
         return latQuery && longQuery;
@@ -148,10 +147,6 @@ class ClusteringHelper {
       List<MarkerWrapper> inputList,
       List<AggregatedPoints> resultList,
       int level) {
-    assert(() {
-      print("input list lenght: " + inputList.length.toString());
-      return true;
-    }());
 
     if (inputList.isEmpty) {
       return resultList;
@@ -179,10 +174,6 @@ class ClusteringHelper {
 
     for (var i = 0; i < aggregation.length; i++) {
       final a = aggregation[i];
-      assert(() {
-        print(a.count);
-        return true;
-      }());
 
       BitmapDescriptor bitmapDescriptor;
 
@@ -214,10 +205,6 @@ class ClusteringHelper {
   }
 
   updatePoints(double zoom) async {
-    assert(() {
-      print("update single points");
-      return true;
-    }());
 
     try {
       List<MarkerWrapper> listOfPoints;
