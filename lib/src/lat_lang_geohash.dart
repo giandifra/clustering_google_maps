@@ -3,13 +3,14 @@ import 'package:geohash/geohash.dart';
 
 class MarkerWrapper {
   final Marker _marker;
-  String geohash;
+  String _geohash;
+  String get geohash => _geohash;
 
   LatLng get location => _marker.position;
   Marker get marker => _marker;
 
   MarkerWrapper(this._marker) {
-    geohash = Geohash.encode(location.latitude, location.longitude);
+    _geohash = Geohash.encode(location.latitude, location.longitude);
   }
 
   getId() {

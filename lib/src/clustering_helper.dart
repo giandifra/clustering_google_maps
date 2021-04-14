@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:async';
 import 'dart:ui' as ui;
+
 import 'aggregated_points.dart';
 import 'aggregation_setup.dart';
 import 'lat_lang_geohash.dart';
@@ -14,12 +15,10 @@ typedef void AggregatedCallback(LatLng center, List<Marker> markers);
 class ClusteringHelper {
   ClusteringHelper.forMemory({
     this.aggregatedCallback,
-    @required this.list,
     @required this.updateMarkers,
     this.maxZoomForAggregatePoints = 13.5,
     @required this.aggregationSetup,
-  })  : assert(list != null),
-        assert(aggregationSetup != null);
+  }) : assert(aggregationSetup != null);
 
   //After this value the map show the single points without aggregation
   final double maxZoomForAggregatePoints;
@@ -46,7 +45,15 @@ class ClusteringHelper {
   Function updateMarkers;
 
   //List of points for memory clustering
-  List<MarkerWrapper> list;
+  List<MarkerWrapper> get list => _sortedList;
+  List<MarkerWrapper> _sortedList;
+
+  // Prev level, a.k.a for caching
+  int prevLevel;
+
+  // caching
+  List<AggregatedPoints> resultAggregated;
+  Set<Marker> resultMarkers;
 
   //Call during the editing of CameraPosition
   //If you want updateMap during the zoom in/out set forceUpdate to true
@@ -78,18 +85,15 @@ class ClusteringHelper {
   // Used for update list
   // NOT RECCOMENDED for good performance (SQL IS BETTER)
   updateData(List<Marker> newList) {
-    list = newList.map((e) => MarkerWrapper(e)).toList();
+    _sortedList = newList.map((e) => MarkerWrapper(e)).toList();
+    _sortedList.sort((a, b) => a.geohash.compareTo(b.geohash)); // in-place sort
+    prevLevel = 0;
+    resultAggregated = null;
     updateMap();
   }
 
-  Future<List<AggregatedPoints>> getAggregatedPoints(double zoom) async {
-    assert(() {
-      print("loading aggregation");
-      return true;
-    }());
-
-    int level = 5;
-
+  int _zoom2Level(double zoom) {
+    int level;
     if (zoom <= aggregationSetup.maxZoomLimits[0]) {
       level = 1;
     } else if (zoom < aggregationSetup.maxZoomLimits[1]) {
@@ -107,32 +111,20 @@ class ClusteringHelper {
     } else {
       level = 8;
     }
+    return level;
+  }
+
+  Future<List<AggregatedPoints>> getAggregatedPoints(double zoom) async {
+    int level = _zoom2Level(zoom);
+    if (prevLevel == level && resultAggregated != null) return resultAggregated;
+    assert(() {
+      print("loading aggregation");
+      return true;
+    }());
 
     try {
-      List<AggregatedPoints> aggregatedPoints;
-      final latLngBounds = await mapController.getVisibleRegion();
-      final listBounds = list.where((p) {
-        final double leftTopLatitude = latLngBounds.northeast.latitude;
-        final double leftTopLongitude = latLngBounds.southwest.longitude;
-        final double rightBottomLatitude = latLngBounds.southwest.latitude;
-        final double rightBottomLongitude = latLngBounds.northeast.longitude;
-
-        final bool latQuery = (leftTopLatitude > rightBottomLatitude)
-            ? p.location.latitude <= leftTopLatitude &&
-                p.location.latitude >= rightBottomLatitude
-            : p.location.latitude <= leftTopLatitude ||
-                p.location.latitude >= rightBottomLatitude;
-
-        final bool longQuery = (leftTopLongitude < rightBottomLongitude)
-            ? p.location.longitude >= leftTopLongitude &&
-                p.location.longitude <= rightBottomLongitude
-            : p.location.longitude >= leftTopLongitude ||
-                p.location.longitude <= rightBottomLongitude;
-        return latQuery && longQuery;
-      }).toList();
-
-      aggregatedPoints = _retrieveAggregatedPoints(listBounds, [], level);
-      return aggregatedPoints;
+      _updateResultAtLevel(level);
+      return resultAggregated;
     } catch (e) {
       assert(() {
         print(e.toString());
@@ -144,35 +136,34 @@ class ClusteringHelper {
 
   final List<AggregatedPoints> aggList = [];
 
-  List<AggregatedPoints> _retrieveAggregatedPoints(
-      List<MarkerWrapper> inputList,
-      List<AggregatedPoints> resultList,
-      int level) {
+  _updateResultAtLevel(int level) {
+    final List<AggregatedPoints> R = [];
+    final L = _sortedList;
+    if (L.length == 0) return;
 
-    if (inputList.isEmpty) {
-      return resultList;
+    var prefix = L[0].geohash.substring(0, level);
+    var A = [L[0]];
+
+    for (var i = 1; i < L.length; i++) {
+      if (L[i].geohash.substring(0, level) == prefix) {
+        A.add(L[i]);
+      } else {
+        R.add(AggregatedPoints(A));
+        A = [L[i]];
+        prefix = L[i].geohash.substring(0, level);
+      }
     }
-    final List<MarkerWrapper> newInputList = List.from(inputList);
-    List<MarkerWrapper> tmp;
-    final t = newInputList[0].geohash.substring(0, level);
-    tmp =
-        newInputList.where((p) => p.geohash.substring(0, level) == t).toList();
-    newInputList.removeWhere((p) => p.geohash.substring(0, level) == t);
-    final a = AggregatedPoints(tmp);
-    resultList.add(a);
-    return _retrieveAggregatedPoints(newInputList, resultList, level);
+    R.add(AggregatedPoints(A));
+    resultAggregated = R;
+    prevLevel = level;
   }
 
   Future<void> updateAggregatedPoints({double zoom = 0.0}) async {
+    final level = _zoom2Level(zoom);
+    if (prevLevel == level && resultMarkers != null)
+      return; // Nothing to do here
     List<AggregatedPoints> aggregation = await getAggregatedPoints(zoom);
-
-    assert(() {
-      print("aggregation lenght: " + aggregation.length.toString());
-      return true;
-    }());
-
     final Set<Marker> markers = {};
-
     for (var i = 0; i < aggregation.length; i++) {
       final a = aggregation[i];
 
@@ -202,15 +193,13 @@ class ClusteringHelper {
 
       markers.add(marker);
     }
-    updateMarkers(markers);
+    resultMarkers = markers;
+    updateMarkers(resultMarkers);
   }
 
   updatePoints(double zoom) async {
-
     try {
-      List<MarkerWrapper> listOfPoints;
-      listOfPoints = list;
-      final Set<Marker> markers = listOfPoints.map((p) => p.marker).toSet();
+      final Set<Marker> markers = list.map((p) => p.marker).toSet();
       updateMarkers(markers);
     } catch (ex) {
       assert(() {
