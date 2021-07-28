@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:clustering_google_maps/clustering_google_maps.dart';
 import 'package:example/app_db.dart';
 import 'package:example/fake_point.dart';
@@ -12,7 +13,7 @@ class SplashBloc {
     print("START GET FAKE DATA");
     try {
       final fakeList = await loadDataFromJson(context);
-      List<LatLngAndGeohash> myPoints = List();
+      final myPoints = <LatLngAndGeohash>[];
       for (int i = 0; i < fakeList.length; i++) {
         final fakePoint = fakeList[i];
         final p = LatLngAndGeohash(
@@ -54,10 +55,10 @@ class SplashBloc {
   Future<void> saveFakePointToDB(FakePoint fakePoint) async {
     var db = await AppDatabase.get().getDb();
     try {
-      await db.transaction((Transaction txn) async {
+      await db?.transaction((Transaction txn) async {
         await txn.rawInsert('INSERT INTO '
             '${FakePoint.tblFakePoints}(${FakePoint.dbGeohash},${FakePoint.dbLat},${FakePoint.dbLong})'
-            ' VALUES("${fakePoint.geohash}",${fakePoint.location.latitude},${fakePoint.location.longitude})');
+            ' VALUES("${fakePoint.geohash}",${fakePoint.location!.latitude},${fakePoint.location!.longitude})');
       });
     } catch (e) {
       print("erorr = " + e.toString());

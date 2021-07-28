@@ -1,19 +1,27 @@
 import 'dart:math';
+
+import 'package:dart_geohash/dart_geohash.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
-import 'package:geohash/geohash.dart';
 
 class LatLngAndGeohash {
   final LatLng location;
-  String geohash;
+  late String geohash;
 
   LatLngAndGeohash(this.location) {
-    geohash = Geohash.encode(location.latitude, location.longitude);
+    final geohasher = GeoHasher();
+    geohash = geohasher.encode(
+      location.longitude,
+      location.latitude,
+    );
   }
 
   LatLngAndGeohash.fromMap(Map<String, dynamic> map)
       : location = LatLng(map['lat'], map['long']) {
-    this.geohash =
-        Geohash.encode(this.location.latitude, this.location.longitude);
+    final geohasher = GeoHasher();
+    this.geohash = geohasher.encode(
+      this.location.longitude,
+      this.location.latitude,
+    );
   }
 
   getId() {
