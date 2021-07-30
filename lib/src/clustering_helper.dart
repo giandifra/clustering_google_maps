@@ -1,84 +1,59 @@
-import 'dart:async';
 import 'dart:typed_data';
+import 'dart:async';
 import 'dart:ui' as ui;
 
-import 'package:clustering_google_maps/src/aggregated_points.dart';
-import 'package:clustering_google_maps/src/aggregation_setup.dart';
-import 'package:clustering_google_maps/src/db_helper.dart';
-import 'package:clustering_google_maps/src/lat_lang_geohash.dart';
+import 'aggregated_points.dart';
+import 'aggregation_setup.dart';
+import 'lat_lang_geohash.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:meta/meta.dart';
+
+typedef void AggregatedCallback(LatLng center, List<Marker> markers);
 
 class ClusteringHelper {
-  ClusteringHelper.forDB({
-    required String this.dbTable,
-    required String this.dbLatColumn,
-    required String this.dbLongColumn,
-    required String this.dbGeohashColumn,
-    required this.updateMarkers,
-    this.database,
-    this.whereClause = "",
-    required this.aggregationSetup,
-    this.maxZoomForAggregatePoints = 13.5,
-    this.bitmapAssetPathForSingleMarker,
-  })  : assert(dbTable != null),
-        assert(dbGeohashColumn != null),
-        assert(dbLongColumn != null),
-        assert(dbLatColumn != null),
-        assert(aggregationSetup != null);
-
   ClusteringHelper.forMemory({
-    required List<LatLngAndGeohash> this.list,
-    required this.updateMarkers,
+    this.aggregatedCallback,
+    @required this.updateMarkers,
     this.maxZoomForAggregatePoints = 13.5,
-    required this.aggregationSetup,
-    this.bitmapAssetPathForSingleMarker,
-  })  : assert(list != null),
-        assert(aggregationSetup != null);
+    @required this.aggregationSetup,
+  }) : assert(aggregationSetup != null);
 
   //After this value the map show the single points without aggregation
   final double maxZoomForAggregatePoints;
 
-  //Database where we performed the queries
-  Database? database;
-
-  //Name of table of the databasa SQLite where are stored the latitude, longitude and geoahash value
-  String? dbTable;
-
-  //Name of column where is stored the latitude
-  String? dbLatColumn;
-
-  //Name of column where is stored the longitude
-  String? dbLongColumn;
-
-  //Name of column where is stored the geohash value
-  String? dbGeohashColumn;
-
-  //Custom bitmap: string of assets position
-  final String? bitmapAssetPathForSingleMarker;
-
   //Custom bitmap: string of assets position
   final AggregationSetup aggregationSetup;
 
-  //Where clause for query db
-  String? whereClause;
+  // Callback for tapping the aggregated Marker
+  final AggregatedCallback aggregatedCallback;
 
-  late GoogleMapController mapController;
+  //Where clause for query db
+  String whereClause;
+
+  GoogleMapController mapController;
 
   //Variable for save the last zoom
   double _currentZoom = 0.0;
 
   //Function called when the map must show single point without aggregation
   // if null the class use the default function
-  Function? showSinglePoint;
+  Function showSinglePoint;
 
   //Function for update Markers on Google Map
   Function updateMarkers;
 
   //List of points for memory clustering
-  List<LatLngAndGeohash>? list;
+  List<MarkerWrapper> get list => _sortedList;
+  List<MarkerWrapper> _sortedList;
+
+  // Prev level, a.k.a for caching
+  int prevLevel;
+
+  // caching
+  List<AggregatedPoints> resultAggregated;
+  Set<Marker> resultMarkers;
 
   //Call during the editing of CameraPosition
   //If you want updateMap during the zoom in/out set forceUpdate to true
@@ -100,7 +75,7 @@ class ClusteringHelper {
       updateAggregatedPoints(zoom: _currentZoom);
     } else {
       if (showSinglePoint != null) {
-        showSinglePoint!();
+        showSinglePoint();
       } else {
         updatePoints(_currentZoom);
       }
@@ -109,19 +84,16 @@ class ClusteringHelper {
 
   // Used for update list
   // NOT RECCOMENDED for good performance (SQL IS BETTER)
-  updateData(List<LatLngAndGeohash> newList) {
-    list = newList;
+  updateData(List<Marker> newList) {
+    _sortedList = newList.map((e) => MarkerWrapper(e)).toList();
+    _sortedList.sort((a, b) => a.geohash.compareTo(b.geohash)); // in-place sort
+    prevLevel = 0;
+    resultAggregated = null;
     updateMap();
   }
 
-  Future<List<AggregatedPoints>> getAggregatedPoints(double zoom) async {
-    assert(() {
-      print("loading aggregation");
-      return true;
-    }());
-
-    int level = 5;
-
+  int _zoom2Level(double zoom) {
+    int level;
     if (zoom <= aggregationSetup.maxZoomLimits[0]) {
       level = 1;
     } else if (zoom < aggregationSetup.maxZoomLimits[1]) {
@@ -136,120 +108,75 @@ class ClusteringHelper {
       level = 6;
     } else if (zoom < aggregationSetup.maxZoomLimits[6]) {
       level = 7;
+    } else {
+      level = 8;
     }
+    return level;
+  }
+
+  Future<List<AggregatedPoints>> getAggregatedPoints(double zoom) async {
+    int level = _zoom2Level(zoom);
+    if (prevLevel == level && resultAggregated != null) return resultAggregated;
+    assert(() {
+      print("loading aggregation");
+      return true;
+    }());
 
     try {
-      List<AggregatedPoints> aggregatedPoints;
-      final latLngBounds = await mapController.getVisibleRegion();
-      if (database != null) {
-        aggregatedPoints = await DBHelper.getAggregatedPoints(
-            database: database,
-            dbTable: dbTable,
-            dbLatColumn: dbLatColumn,
-            dbLongColumn: dbLongColumn,
-            dbGeohashColumn: dbGeohashColumn,
-            level: level,
-            latLngBounds: latLngBounds,
-            whereClause: whereClause!);
-      } else {
-        final listBounds = list!.where((p) {
-          final double leftTopLatitude = latLngBounds.northeast.latitude;
-          final double leftTopLongitude = latLngBounds.southwest.longitude;
-          final double rightBottomLatitude = latLngBounds.southwest.latitude;
-          final double rightBottomLongitude = latLngBounds.northeast.longitude;
-
-          final bool latQuery = (leftTopLatitude > rightBottomLatitude)
-              ? p.location.latitude <= leftTopLatitude &&
-                  p.location.latitude >= rightBottomLatitude
-              : p.location.latitude <= leftTopLatitude ||
-                  p.location.latitude >= rightBottomLatitude;
-
-          final bool longQuery = (leftTopLongitude < rightBottomLongitude)
-              ? p.location.longitude >= leftTopLongitude &&
-                  p.location.longitude <= rightBottomLongitude
-              : p.location.longitude >= leftTopLongitude ||
-                  p.location.longitude <= rightBottomLongitude;
-          return latQuery && longQuery;
-        }).toList();
-
-        aggregatedPoints =
-            _retrieveAggregatedPoints(listBounds, <AggregatedPoints>[], level);
-      }
-      return aggregatedPoints;
+      _updateResultAtLevel(level);
+      return resultAggregated;
     } catch (e) {
       assert(() {
         print(e.toString());
         return true;
       }());
-      return <AggregatedPoints>[];
+      return List.empty();
     }
   }
 
   final List<AggregatedPoints> aggList = [];
 
-  List<AggregatedPoints> _retrieveAggregatedPoints(
-      List<LatLngAndGeohash> inputList,
-      List<AggregatedPoints> resultList,
-      int level) {
-    assert(() {
-      print("input list lenght: " + inputList.length.toString());
-      return true;
-    }());
+  _updateResultAtLevel(int level) {
+    final List<AggregatedPoints> R = [];
+    final L = _sortedList;
+    if (L.length == 0) return;
 
-    if (inputList.isEmpty) {
-      return resultList;
+    var prefix = L[0].geohash.substring(0, level);
+    var A = [L[0]];
+
+    for (var i = 1; i < L.length; i++) {
+      if (L[i].geohash.substring(0, level) == prefix) {
+        A.add(L[i]);
+      } else {
+        R.add(AggregatedPoints(A));
+        A = [L[i]];
+        prefix = L[i].geohash.substring(0, level);
+      }
     }
-    final List<LatLngAndGeohash> newInputList = List.from(inputList);
-    List<LatLngAndGeohash> tmp;
-    final t = newInputList[0].geohash.substring(0, level);
-    tmp =
-        newInputList.where((p) => p.geohash.substring(0, level) == t).toList();
-    newInputList.removeWhere((p) => p.geohash.substring(0, level) == t);
-    double latitude = 0;
-    double longitude = 0;
-    tmp.forEach((l) {
-      latitude += l.location.latitude;
-      longitude += l.location.longitude;
-    });
-    final count = tmp.length;
-    final a =
-        AggregatedPoints(LatLng(latitude / count, longitude / count), count);
-    resultList.add(a);
-    return _retrieveAggregatedPoints(newInputList, resultList, level);
+    R.add(AggregatedPoints(A));
+    resultAggregated = R;
+    prevLevel = level;
   }
 
   Future<void> updateAggregatedPoints({double zoom = 0.0}) async {
+    final level = _zoom2Level(zoom);
+    if (prevLevel == level && resultMarkers != null)
+      return; // Nothing to do here
     List<AggregatedPoints> aggregation = await getAggregatedPoints(zoom);
-
-    assert(() {
-      print("aggregation lenght: " + aggregation.length.toString());
-      return true;
-    }());
-
     final Set<Marker> markers = {};
-
     for (var i = 0; i < aggregation.length; i++) {
       final a = aggregation[i];
-      assert(() {
-        print(a.count);
-        return true;
-      }());
 
       BitmapDescriptor bitmapDescriptor;
 
       if (a.count == 1) {
-        if (bitmapAssetPathForSingleMarker != null) {
-          bitmapDescriptor = await BitmapDescriptor.fromAssetImage(
-              ImageConfiguration(), bitmapAssetPathForSingleMarker!);
-        } else {
-          bitmapDescriptor = BitmapDescriptor.defaultMarker;
-        }
-      } else {
-        // >1
-        final Uint8List markerIcon =
-            await getBytesFromCanvas(a.count.toString(), getColor(a.count));
-        bitmapDescriptor = BitmapDescriptor.fromBytes(markerIcon);
+        markers.add(a.points[0].marker);
+        continue;
       }
+      // >1
+      final Uint8List markerIcon =
+          await getBytesFromCanvas(a.count.toString(), getColor(a.count));
+      bitmapDescriptor = BitmapDescriptor.fromBytes(markerIcon);
       final MarkerId markerId = MarkerId(a.getId());
 
       final marker = Marker(
@@ -257,47 +184,22 @@ class ClusteringHelper {
         position: a.location,
         infoWindow: InfoWindow(title: a.count.toString()),
         icon: bitmapDescriptor,
+        onTap: () {
+          if (aggregatedCallback != null)
+            aggregatedCallback(
+                a.location, a.points.map((e) => e.marker).toList());
+        },
       );
 
       markers.add(marker);
     }
-    updateMarkers(markers);
+    resultMarkers = markers;
+    updateMarkers(resultMarkers);
   }
 
   updatePoints(double zoom) async {
-    assert(() {
-      print("update single points");
-      return true;
-    }());
-
     try {
-      List<LatLngAndGeohash>? listOfPoints;
-      if (database != null) {
-        listOfPoints = await DBHelper.getPoints(
-            database: database!,
-            dbTable: dbTable,
-            dbLatColumn: dbLatColumn,
-            dbLongColumn: dbLongColumn,
-            whereClause: whereClause);
-      } else {
-        listOfPoints = list;
-      }
-
-      final Set<Marker> markers = listOfPoints!.map((p) {
-        final MarkerId markerId = MarkerId(p.getId());
-        return Marker(
-          markerId: markerId,
-          position: p.location,
-          infoWindow: InfoWindow(
-              title:
-                  "${p.location.latitude.toStringAsFixed(2)},${p.location.longitude.toStringAsFixed(2)}"),
-          icon: bitmapAssetPathForSingleMarker != null
-              ? BitmapDescriptor.fromAssetImage(
-                      ImageConfiguration(), bitmapAssetPathForSingleMarker!)
-                  as BitmapDescriptor
-              : BitmapDescriptor.defaultMarker,
-        );
-      }).toSet();
+      final Set<Marker> markers = list.map((p) => p.marker).toSet();
       updateMarkers(markers);
     } catch (ex) {
       assert(() {
@@ -310,9 +212,9 @@ class ClusteringHelper {
   Future<Uint8List> getBytesFromCanvas(String text, MaterialColor color) async {
     final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
     final Canvas canvas = Canvas(pictureRecorder);
-    final Paint paint1 = Paint()..color = color[400]!;
-    final Paint paint2 = Paint()..color = color[300]!;
-    final Paint paint3 = Paint()..color = color[100]!;
+    final Paint paint1 = Paint()..color = color[400];
+    final Paint paint2 = Paint()..color = color[300];
+    final Paint paint3 = Paint()..color = color[100];
     final int size = aggregationSetup.markerSize;
     canvas.drawCircle(Offset(size / 2, size / 2), size / 2.0, paint3);
     canvas.drawCircle(Offset(size / 2, size / 2), size / 2.4, paint2);
@@ -330,8 +232,7 @@ class ClusteringHelper {
     );
 
     final img = await pictureRecorder.endRecording().toImage(size, size);
-    final data = await (img.toByteData(format: ui.ImageByteFormat.png)
-        as FutureOr<ByteData>);
+    final data = await img.toByteData(format: ui.ImageByteFormat.png);
     return data.buffer.asUint8List();
   }
 
