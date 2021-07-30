@@ -1,7 +1,7 @@
+import 'package:flutter/material.dart';
+
 import 'home.dart';
 import 'splash_bloc.dart';
-import 'package:flutter/material.dart';
-import 'package:clustering_google_maps/clustering_google_maps.dart';
 
 class Splash extends StatefulWidget {
   @override
@@ -40,7 +40,9 @@ class SplashState extends State<Splash> {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => HomeScreen(),
+                            builder: (context) => HomeScreen(
+                              list: [],
+                            ),
                           ),
                         );
                         setState(() {
@@ -70,7 +72,7 @@ class SplashState extends State<Splash> {
                         setState(() {
                           loading = true;
                         });
-                        final List<LatLngAndGeohash> list =
+                        final list =
                             await bloc.getListOfLatLngAndGeohash(context);
                         await Navigator.push(
                           context,

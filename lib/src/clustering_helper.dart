@@ -1,24 +1,24 @@
-import 'dart:typed_data';
 import 'dart:async';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import 'aggregated_points.dart';
 import 'aggregation_setup.dart';
 import 'lat_lang_geohash.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:meta/meta.dart';
 
 typedef void AggregatedCallback(LatLng center, List<Marker> markers);
 
 class ClusteringHelper {
   ClusteringHelper.forMemory({
     this.aggregatedCallback,
-    @required this.updateMarkers,
+    required this.updateMarkers,
     this.maxZoomForAggregatePoints = 13.5,
-    @required this.aggregationSetup,
-  }) : assert(aggregationSetup != null);
+    required this.aggregationSetup,
+  });
 
   //After this value the map show the single points without aggregation
   final double maxZoomForAggregatePoints;
@@ -27,33 +27,33 @@ class ClusteringHelper {
   final AggregationSetup aggregationSetup;
 
   // Callback for tapping the aggregated Marker
-  final AggregatedCallback aggregatedCallback;
+  final AggregatedCallback? aggregatedCallback;
 
   //Where clause for query db
-  String whereClause;
+  String? whereClause;
 
-  GoogleMapController mapController;
+  GoogleMapController? mapController;
 
   //Variable for save the last zoom
   double _currentZoom = 0.0;
 
   //Function called when the map must show single point without aggregation
   // if null the class use the default function
-  Function showSinglePoint;
+  Function? showSinglePoint;
 
   //Function for update Markers on Google Map
   Function updateMarkers;
 
   //List of points for memory clustering
   List<MarkerWrapper> get list => _sortedList;
-  List<MarkerWrapper> _sortedList;
+  late List<MarkerWrapper> _sortedList;
 
   // Prev level, a.k.a for caching
-  int prevLevel;
+  int? prevLevel;
 
   // caching
-  List<AggregatedPoints> resultAggregated;
-  Set<Marker> resultMarkers;
+  List<AggregatedPoints>? resultAggregated;
+  Set<Marker>? resultMarkers;
 
   //Call during the editing of CameraPosition
   //If you want updateMap during the zoom in/out set forceUpdate to true
@@ -75,7 +75,7 @@ class ClusteringHelper {
       updateAggregatedPoints(zoom: _currentZoom);
     } else {
       if (showSinglePoint != null) {
-        showSinglePoint();
+        showSinglePoint?.call();
       } else {
         updatePoints(_currentZoom);
       }
@@ -114,7 +114,7 @@ class ClusteringHelper {
     return level;
   }
 
-  Future<List<AggregatedPoints>> getAggregatedPoints(double zoom) async {
+  Future<List<AggregatedPoints>?> getAggregatedPoints(double zoom) async {
     int level = _zoom2Level(zoom);
     if (prevLevel == level && resultAggregated != null) return resultAggregated;
     assert(() {
@@ -162,36 +162,37 @@ class ClusteringHelper {
     final level = _zoom2Level(zoom);
     if (prevLevel == level && resultMarkers != null)
       return; // Nothing to do here
-    List<AggregatedPoints> aggregation = await getAggregatedPoints(zoom);
+    final aggregation = await getAggregatedPoints(zoom);
     final Set<Marker> markers = {};
-    for (var i = 0; i < aggregation.length; i++) {
-      final a = aggregation[i];
+    if (aggregation != null) {
+      for (var i = 0; i < aggregation.length; i++) {
+        final a = aggregation[i];
 
-      BitmapDescriptor bitmapDescriptor;
+        BitmapDescriptor bitmapDescriptor;
 
-      if (a.count == 1) {
-        markers.add(a.points[0].marker);
-        continue;
+        if (a.count == 1) {
+          markers.add(a.points[0].marker);
+          continue;
+        }
+        // >1
+        final Uint8List markerIcon =
+            await getBytesFromCanvas(a.count.toString(), getColor(a.count));
+        bitmapDescriptor = BitmapDescriptor.fromBytes(markerIcon);
+        final MarkerId markerId = MarkerId(a.getId());
+
+        final marker = Marker(
+          markerId: markerId,
+          position: a.location,
+          infoWindow: InfoWindow(title: a.count.toString()),
+          icon: bitmapDescriptor,
+          onTap: () {
+              aggregatedCallback?.call(
+                  a.location, a.points.map((e) => e.marker).toList());
+          },
+        );
+
+        markers.add(marker);
       }
-      // >1
-      final Uint8List markerIcon =
-          await getBytesFromCanvas(a.count.toString(), getColor(a.count));
-      bitmapDescriptor = BitmapDescriptor.fromBytes(markerIcon);
-      final MarkerId markerId = MarkerId(a.getId());
-
-      final marker = Marker(
-        markerId: markerId,
-        position: a.location,
-        infoWindow: InfoWindow(title: a.count.toString()),
-        icon: bitmapDescriptor,
-        onTap: () {
-          if (aggregatedCallback != null)
-            aggregatedCallback(
-                a.location, a.points.map((e) => e.marker).toList());
-        },
-      );
-
-      markers.add(marker);
     }
     resultMarkers = markers;
     updateMarkers(resultMarkers);
@@ -212,9 +213,9 @@ class ClusteringHelper {
   Future<Uint8List> getBytesFromCanvas(String text, MaterialColor color) async {
     final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
     final Canvas canvas = Canvas(pictureRecorder);
-    final Paint paint1 = Paint()..color = color[400];
-    final Paint paint2 = Paint()..color = color[300];
-    final Paint paint3 = Paint()..color = color[100];
+    final Paint paint1 = Paint()..color = color[400]!;
+    final Paint paint2 = Paint()..color = color[300]!;
+    final Paint paint3 = Paint()..color = color[100]!;
     final int size = aggregationSetup.markerSize;
     canvas.drawCircle(Offset(size / 2, size / 2), size / 2.0, paint3);
     canvas.drawCircle(Offset(size / 2, size / 2), size / 2.4, paint2);
@@ -233,7 +234,7 @@ class ClusteringHelper {
 
     final img = await pictureRecorder.endRecording().toImage(size, size);
     final data = await img.toByteData(format: ui.ImageByteFormat.png);
-    return data.buffer.asUint8List();
+    return data!.buffer.asUint8List();
   }
 
   MaterialColor getColor(int count) {

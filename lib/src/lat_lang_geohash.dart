@@ -1,16 +1,21 @@
-import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng, Marker;
-import 'package:geohash/geohash.dart';
+import 'package:dart_geohash/dart_geohash.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart'
+    show LatLng, Marker;
 
 class MarkerWrapper {
   final Marker _marker;
-  String _geohash;
+  late String _geohash;
   String get geohash => _geohash;
 
   LatLng get location => _marker.position;
   Marker get marker => _marker;
 
   MarkerWrapper(this._marker) {
-    _geohash = Geohash.encode(location.latitude, location.longitude);
+    final geohaser = GeoHasher();
+    _geohash = geohaser.encode(
+      location.longitude,
+      location.latitude,
+    );
   }
 
   getId() {
