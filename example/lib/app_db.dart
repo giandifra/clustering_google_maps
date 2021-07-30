@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:example/fake_point.dart';
+import 'fake_point.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
@@ -11,7 +11,7 @@ class AppDatabase {
 
   AppDatabase._internal();
 
-  Database _database;
+  Database? _database;
 
   static AppDatabase get() {
     return _appDatabase;
@@ -19,7 +19,7 @@ class AppDatabase {
 
   final _lock = new Lock();
 
-  Future<Database> getDb() async {
+  Future<Database?> getDb() async {
     if (_database == null) {
       await _lock.synchronized(() async {
         // Check again once entering the synchronized block
@@ -55,8 +55,8 @@ class AppDatabase {
   }
 
   Future<void> closeDatabase() async {
-    if (_database != null && _database.isOpen) {
-      await _database.close();
+    if (_database != null && _database!.isOpen) {
+      await _database?.close();
       _database = null;
       print("database closed");
     }

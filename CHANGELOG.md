@@ -1,3 +1,7 @@
+## 0.1.2-nullsafety.1
+
+* Null safety
+
 ## 0.1.2
 
 * Migrate to google_maps_flutter: 0.5.21+3

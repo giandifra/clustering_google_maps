@@ -12,3 +12,8 @@ ios/.symlinks
 
 #api key files
 **/example/android/app/src/main/res/values/strings.xml
+
+.fvm/
+.idea/
+.metadata
+/example.gif

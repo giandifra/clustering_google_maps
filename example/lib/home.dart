@@ -1,20 +1,21 @@
-import 'package:example/app_db.dart';
-import 'package:example/fake_point.dart';
+import 'package:clustering_google_maps/clustering_google_maps.dart'
+    show AggregationSetup, ClusteringHelper, LatLngAndGeohash, MarkerWrapper;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:clustering_google_maps/clustering_google_maps.dart' show LatLngAndGeohash,ClusteringHelper,AggregationSetup;
+
+import 'fake_point.dart';
 
 class HomeScreen extends StatefulWidget {
-  final List<LatLngAndGeohash> list;
+  final List<Marker> list;
 
-  HomeScreen({Key key, this.list}) : super(key: key);
+  HomeScreen({Key? key, required this.list}) : super(key: key);
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  ClusteringHelper clusteringHelper;
+  late ClusteringHelper clusteringHelper;
   final CameraPosition initialCameraPosition =
       CameraPosition(target: LatLng(0.000000, 0.000000), zoom: 0.0);
 
@@ -23,10 +24,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onMapCreated(GoogleMapController mapController) async {
     print("onMapCreated");
     clusteringHelper.mapController = mapController;
-    if (widget.list == null) {
-      clusteringHelper.database = await AppDatabase.get().getDb();
-    }
-    clusteringHelper.updateMap();
+    // if (widget.list == null) {
+    //   clusteringHelper.database = await AppDatabase.get().getDb();
+    // }
+    clusteringHelper.updateData(widget.list);
   }
 
   updateMarkers(Set<Marker> markers) {
@@ -48,22 +49,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // For db solution
   initDatabaseClustering() {
-    clusteringHelper = ClusteringHelper.forDB(
-      dbGeohashColumn: FakePoint.dbGeohash,
-      dbLatColumn: FakePoint.dbLat,
-      dbLongColumn: FakePoint.dbLong,
-      dbTable: FakePoint.tblFakePoints,
-      updateMarkers: updateMarkers,
-      aggregationSetup: AggregationSetup(),
-    );
+    // clusteringHelper = ClusteringHelper.forDB(
+    //   dbGeohashColumn: FakePoint.dbGeohash,
+    //   dbLatColumn: FakePoint.dbLat,
+    //   dbLongColumn: FakePoint.dbLong,
+    //   dbTable: FakePoint.tblFakePoints,
+    //   updateMarkers: updateMarkers,
+    //   aggregationSetup: AggregationSetup(),
+    // );
   }
 
   // For memory solution
   initMemoryClustering() {
     clusteringHelper = ClusteringHelper.forMemory(
-      list: widget.list,
+      // list: widget.list!,
       updateMarkers: updateMarkers,
       aggregationSetup: AggregationSetup(markerSize: 150),
+      aggregatedCallback: (LatLng center, List<Marker> markers) {
+        print(center);
+        print(markers.length);
+      },
     );
   }
 

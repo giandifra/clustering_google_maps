@@ -1,46 +1,51 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import 'lat_lang_geohash.dart';
+
 class AggregatedPoints {
-  final LatLng location;
-  final int count;
-  String bitmabAssetName;
+  late LatLng _location;
+  final List<MarkerWrapper> points;
+  late String bitmabAssetName;
 
-  AggregatedPoints(this.location, this.count) {
-    this.bitmabAssetName = getBitmapDescriptor();
+  LatLng get location => _location;
+  int get count => points.length;
+
+  AggregatedPoints(this.points) {
+    double latitude = 0;
+    double longitude = 0;
+    points.forEach((l) {
+      latitude += l.location.latitude;
+      longitude += l.location.longitude;
+    });
+    _location = LatLng(latitude / count, longitude / count);
+    this.bitmabAssetName = getBitmapDescriptorAsset();
   }
 
-  AggregatedPoints.fromMap(
-      Map<String, dynamic> map, String dbLatColumn, String dbLongColumn)
-      : count = map['n_marker'],
-        this.location = LatLng(map['lat'], map['long']) {
-    this.bitmabAssetName = getBitmapDescriptor();
-  }
-
-  String getBitmapDescriptor() {
-    String bitmapDescriptor;
+  String getBitmapDescriptorAsset() {
+    String bitmapAsset;
     if (count < 10) {
       // + 2
-      bitmapDescriptor = "assets/images/m1.png";
+      bitmapAsset = "assets/images/m1.png";
     } else if (count < 25) {
       // + 10
-      bitmapDescriptor = "assets/images/m2.png";
+      bitmapAsset = "assets/images/m2.png";
     } else if (count < 50) {
       // + 25
-      bitmapDescriptor = "assets/images/m3.png";
+      bitmapAsset = "assets/images/m3.png";
     } else if (count < 100) {
       // + 50
-      bitmapDescriptor = "assets/images/m4.png";
+      bitmapAsset = "assets/images/m4.png";
     } else if (count < 500) {
       // + 100
-      bitmapDescriptor = "assets/images/m5.png";
+      bitmapAsset = "assets/images/m5.png";
     } else if (count < 1000) {
       // +500
-      bitmapDescriptor = "assets/images/m6.png";
+      bitmapAsset = "assets/images/m6.png";
     } else {
       // + 1k
-      bitmapDescriptor = "assets/images/m7.png";
+      bitmapAsset = "assets/images/m7.png";
     }
-    return bitmapDescriptor;
+    return bitmapAsset;
   }
 
   getId() {
